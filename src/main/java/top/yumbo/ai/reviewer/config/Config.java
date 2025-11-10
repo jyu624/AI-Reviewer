@@ -121,9 +121,16 @@ public class Config {
 
         public Builder projectPath(Path projectPath) {
             this.projectPath = projectPath;
-            // 默认输出目录为项目根目录的 .ai-review
+            // 默认输出目录为 {projectPath}-AI
             if (this.outputDir == null) {
-                this.outputDir = projectPath.resolve(".ai-review");
+                String projectDirName = projectPath.getFileName().toString();
+                Path parentDir = projectPath.getParent();
+                if (parentDir != null) {
+                    this.outputDir = parentDir.resolve(projectDirName + "-AI");
+                } else {
+                    // 如果没有父目录，则使用当前目录
+                    this.outputDir = Paths.get(projectDirName + "-AI");
+                }
             }
             return this;
         }

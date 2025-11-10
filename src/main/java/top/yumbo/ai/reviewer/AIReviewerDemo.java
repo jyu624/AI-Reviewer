@@ -97,7 +97,8 @@ public class AIReviewerDemo {
 
         Config config = Config.builder()
             .projectPath(System.getProperty("user.dir"))
-            .outputDir(Paths.get(System.getProperty("user.dir"), ".ai-review"))
+            // 默认输出目录为 {projectPath}-AI，这里可以自定义
+            // .outputDir(Paths.get(System.getProperty("user.dir")).getParent().resolve("AI-Reviewer-AI"))
             .aiPlatform("deepseek")
             .apiKey(System.getenv("AI_API_KEY"))
             .apiUrl("https://api.deepseek.com/v1/chat/completions")
