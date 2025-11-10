@@ -35,6 +35,10 @@ public class Config {
     private final boolean generateFileDetails;  // 是否生成文件级详细报告
     private final List<String> reportFormats;  // markdown / json / pdf
 
+    // Prompt 模板
+    private final String chunkPromptTemplate;     // 分块分析提示词模板
+    private final String summaryPromptTemplate;   // 总结提示词模板
+
     private Config(Builder builder) {
         this.projectPath = builder.projectPath;
         this.outputDir = builder.outputDir;
@@ -52,6 +56,8 @@ public class Config {
         this.enableCheckpoint = builder.enableCheckpoint;
         this.generateFileDetails = builder.generateFileDetails;
         this.reportFormats = builder.reportFormats;
+        this.chunkPromptTemplate = builder.chunkPromptTemplate;
+        this.summaryPromptTemplate = builder.summaryPromptTemplate;
     }
 
     // Getters
@@ -71,6 +77,8 @@ public class Config {
     public boolean isEnableCheckpoint() { return enableCheckpoint; }
     public boolean isGenerateFileDetails() { return generateFileDetails; }
     public List<String> getReportFormats() { return reportFormats; }
+    public String getChunkPromptTemplate() { return chunkPromptTemplate; }
+    public String getSummaryPromptTemplate() { return summaryPromptTemplate; }
 
     public static Builder builder() {
         return new Builder();
@@ -118,6 +126,8 @@ public class Config {
         private boolean enableCheckpoint = true;
         private boolean generateFileDetails = true;
         private List<String> reportFormats = Arrays.asList("markdown", "json");
+        private String chunkPromptTemplate = null;  // 默认为 null，使用硬编码的提示词
+        private String summaryPromptTemplate = null;  // 默认为 null，使用硬编码的提示词
 
         public Builder projectPath(Path projectPath) {
             this.projectPath = projectPath;
@@ -215,6 +225,16 @@ public class Config {
 
         public Builder reportFormats(String... formats) {
             this.reportFormats = Arrays.asList(formats);
+            return this;
+        }
+
+        public Builder chunkPromptTemplate(String chunkPromptTemplate) {
+            this.chunkPromptTemplate = chunkPromptTemplate;
+            return this;
+        }
+
+        public Builder summaryPromptTemplate(String summaryPromptTemplate) {
+            this.summaryPromptTemplate = summaryPromptTemplate;
             return this;
         }
 

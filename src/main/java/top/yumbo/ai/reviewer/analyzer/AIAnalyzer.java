@@ -117,6 +117,7 @@ public class AIAnalyzer implements AutoCloseable {
     private List<ChunkAnalysisResult> analyzeChunks(List<FileChunk> chunks) {
         log.info("开始并发分析 {} 个代码块", chunks.size());
         List<Future<ChunkAnalysisResult>> futures = new ArrayList<>();
+        final int totalChunks = chunks.size();
 
         // 提交所有任务
         for (int i = 0; i < chunks.size(); i++) {
@@ -125,7 +126,7 @@ public class AIAnalyzer implements AutoCloseable {
 
             Future<ChunkAnalysisResult> future = executorService.submit(() -> {
                 metrics.recordRequestStart();
-                return analyzeChunkWithEnhancements(index, chunk);
+                return analyzeChunkWithEnhancements(index, chunk, totalChunks);
             });
             futures.add(future);
         }
@@ -164,7 +165,7 @@ public class AIAnalyzer implements AutoCloseable {
     /**
      * 分析单个代码块（增强版：集成所有并发控制机制）
      */
-    private ChunkAnalysisResult analyzeChunkWithEnhancements(int index, FileChunk chunk) {
+    private ChunkAnalysisResult analyzeChunkWithEnhancements(int index, FileChunk chunk, int totalChunks) {
         long startTime = System.currentTimeMillis();
         String chunkId = computeChunkId(chunk);
 
@@ -198,7 +199,7 @@ public class AIAnalyzer implements AutoCloseable {
                 rateLimiter.acquire();
 
                 // 3.2 执行分析
-                String prompt = buildPrompt(chunk);
+                String prompt = buildPrompt(chunk, totalChunks);
                 String response = aiService.analyze(prompt, config.getMaxTokens());
 
                 // 3.3 记录成功
@@ -261,7 +262,17 @@ public class AIAnalyzer implements AutoCloseable {
     /**
      * 构建 AI 提示词
      */
-    private String buildPrompt(FileChunk chunk) {
+    private String buildPrompt(FileChunk chunk, int totalChunks) {
+        // 如果配置了自定义模板，使用自定义模板
+        if (config.getChunkPromptTemplate() != null && !config.getChunkPromptTemplate().isEmpty()) {
+            return replaceTemplateVariables(
+                config.getChunkPromptTemplate(),
+                chunk,
+                totalChunks
+            );
+        }
+
+        // 否则使用默认模板
         String prompt = """
             请对以下代码进行全面分析：
             
@@ -276,6 +287,35 @@ public class AIAnalyzer implements AutoCloseable {
             请以结构化的方式返回分析结果。
             """;
         return String.format(prompt, chunk.getContent());
+    }
+
+    /**
+     * 替换模板中的变量
+     */
+    private String replaceTemplateVariables(String template, FileChunk chunk, int totalChunks) {
+        String result = template;
+
+        // 替换 {{chunkIndex}} - 从 1 开始
+        result = result.replace("{{chunkIndex}}", String.valueOf(chunk.getChunkIndex() + 1));
+
+        // 替换 {{totalChunks}}
+        result = result.replace("{{totalChunks}}", String.valueOf(totalChunks));
+
+        // 替换 {{content}}
+        result = result.replace("{{content}}", chunk.getContent());
+
+        // 替换 {{filePaths}} - 文件路径列表
+        String filePaths = chunk.getFiles().stream()
+            .map(file -> file.getPath().toString())
+            .reduce((a, b) -> a + ", " + b)
+            .orElse("");
+        result = result.replace("{{filePaths}}", filePaths);
+
+        // 替换 {{feature}} - 从配置文件或资源加载（暂时使用空字符串）
+        // TODO: 从 feature_chunk.md 加载
+        result = result.replace("{{feature}}", "");
+
+        return result;
     }
 
     /**

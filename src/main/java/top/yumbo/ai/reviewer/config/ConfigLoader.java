@@ -93,6 +93,16 @@ public class ConfigLoader {
             ? chunkReportConfig.isGenerateFileDetails()
             : (summaryReportConfig != null ? summaryReportConfig.isGenerateFileDetails() : true);
 
+        // 提取 prompt 模板
+        String chunkPromptTemplate = null;
+        String summaryPromptTemplate = null;
+        if (reviewerConfig.getChunk() != null) {
+            chunkPromptTemplate = reviewerConfig.getChunk().getChunkPromptTemplate();
+        }
+        if (reviewerConfig.getSummary() != null) {
+            summaryPromptTemplate = reviewerConfig.getSummary().getProjectPromptTemplate();
+        }
+
         // 5. 构建 Config 对象
         Config.Builder builder = Config.builder()
             .projectPath(projectPath)
@@ -109,6 +119,14 @@ public class ConfigLoader {
             .enableCheckpoint(true)
             .generateFileDetails(generateFileDetails)
             .reportFormats(reportFormats.toArray(new String[0]));
+
+        // 设置 prompt 模板（如果有）
+        if (chunkPromptTemplate != null && !chunkPromptTemplate.isEmpty()) {
+            builder.chunkPromptTemplate(chunkPromptTemplate);
+        }
+        if (summaryPromptTemplate != null && !summaryPromptTemplate.isEmpty()) {
+            builder.summaryPromptTemplate(summaryPromptTemplate);
+        }
 
         // 6. 设置 include/exclude patterns
         if (analyzerConfig != null) {
