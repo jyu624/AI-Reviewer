@@ -50,10 +50,18 @@ public class AIAnalyzer implements AutoCloseable {
     private final CheckpointStore checkpointStore;
     private final PerformanceMetrics metrics;
 
+    // 缓存加载的 feature 内容
+    private String chunkFeatureContent = null;
+    private String summaryFeatureContent = null;
+
     public AIAnalyzer(Config config, AIService aiService) {
         this.config = config;
         this.aiService = aiService;
         this.chunkSplitter = new ChunkSplitter(config.getChunkSize());
+
+        // 加载 feature 内容
+        this.chunkFeatureContent = loadFeatureContent("reviewer/analyzer/feature_chunk.md");
+        this.summaryFeatureContent = loadFeatureContent("reviewer/analyzer/feature_summary.yml");
 
         // 创建自定义线程池
         int coreSize = Math.max(2, config.getConcurrency());
@@ -311,11 +319,27 @@ public class AIAnalyzer implements AutoCloseable {
             .orElse("");
         result = result.replace("{{filePaths}}", filePaths);
 
-        // 替换 {{feature}} - 从配置文件或资源加载（暂时使用空字符串）
-        // TODO: 从 feature_chunk.md 加载
-        result = result.replace("{{feature}}", "");
+        // 替换 {{feature}} - 从配置文件或资源加载
+        String featureContent = chunkFeatureContent != null ? chunkFeatureContent : "";
+        result = result.replace("{{feature}}", featureContent);
 
         return result;
+    }
+
+    /**
+     * 从 classpath 加载 feature 文件内容
+     */
+    private String loadFeatureContent(String resourcePath) {
+        try (java.io.InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                log.warn("未找到 feature 文件: {}", resourcePath);
+                return "";
+            }
+            return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("加载 feature 文件失败: {}", resourcePath, e);
+            return "";
+        }
     }
 
     /**
@@ -396,13 +420,103 @@ public class AIAnalyzer implements AutoCloseable {
     private SummaryReport generateSummaryReport(List<SourceFile> files, List<DetailReport> detailReports) {
         String projectName = config.getProjectPath().getFileName().toString();
 
+        // 如果配置了摘要提示词模板，使用 AI 生成摘要
+        if (config.getSummaryPromptTemplate() != null && !config.getSummaryPromptTemplate().isEmpty()) {
+            try {
+                String summaryPrompt = buildSummaryPrompt(files, detailReports);
+                String summaryResponse = aiService.analyze(summaryPrompt, config.getMaxTokens());
+
+                // 解析 AI 返回的摘要（简化处理，实际应该解析 JSON）
+                return new SummaryReport(
+                    projectName,
+                    summaryResponse,
+                    75.0, // TODO: 从 AI 响应中解析评分
+                    extractIssueCounts(detailReports),
+                    Map.of("totalFiles", files.size(), "analyzedReports", detailReports.size())
+                );
+            } catch (Exception e) {
+                log.error("使用 AI 生成摘要报告失败，使用默认摘要", e);
+            }
+        }
+
+        // 默认摘要
         return new SummaryReport(
             projectName,
             "项目整体代码质量良好，建议关注以下问题...",
-            75.0, // TODO: 计算真实评分
-            Map.of("HIGH", 0, "MEDIUM", 0, "LOW", 0),
-            Map.of()
+            75.0,
+            extractIssueCounts(detailReports),
+            Map.of("totalFiles", files.size(), "analyzedReports", detailReports.size())
         );
+    }
+
+    /**
+     * 构建摘要提示词
+     */
+    private String buildSummaryPrompt(List<SourceFile> files, List<DetailReport> detailReports) {
+        String template = config.getSummaryPromptTemplate();
+
+        // 替换 {{feature}} - 总评标准
+        String featureContent = summaryFeatureContent != null ? summaryFeatureContent : "";
+        template = template.replace("{{feature}}", featureContent);
+
+        // 替换 {{aggregatedFeatures}} - 聚合特征摘要
+        String aggregatedFeatures = buildAggregatedFeatures(files, detailReports);
+        template = template.replace("{{aggregatedFeatures}}", aggregatedFeatures);
+
+        return template;
+    }
+
+    /**
+     * 构建聚合特征摘要
+     */
+    private String buildAggregatedFeatures(List<SourceFile> files, List<DetailReport> detailReports) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("## 项目统计\n");
+        sb.append("- 文件总数: ").append(files.size()).append("\n");
+        sb.append("- 已分析报告数: ").append(detailReports.size()).append("\n");
+
+        // 统计问题数量
+        Map<String, Integer> issueCounts = extractIssueCounts(detailReports);
+        sb.append("\n## 问题统计\n");
+        issueCounts.forEach((severity, count) ->
+            sb.append("- ").append(severity).append(": ").append(count).append("\n")
+        );
+
+        // 添加详细报告摘要
+        sb.append("\n## 分块分析摘要\n");
+        for (int i = 0; i < Math.min(5, detailReports.size()); i++) {
+            DetailReport report = detailReports.get(i);
+            sb.append("### 文件 ").append(i + 1).append(": ").append(report.getFileName()).append("\n");
+            sb.append("类型: ").append(report.getCategory()).append(", 大小: ").append(report.getFileSize()).append(" bytes\n");
+            // 截取分析内容的前200字符
+            String analysis = report.getAnalysis();
+            if (analysis != null && analysis.length() > 200) {
+                analysis = analysis.substring(0, 200) + "...";
+            }
+            sb.append("分析摘要: ").append(analysis).append("\n\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 从详细报告中提取问题统计
+     */
+    private Map<String, Integer> extractIssueCounts(List<DetailReport> detailReports) {
+        Map<String, Integer> counts = new HashMap<>();
+        counts.put("HIGH", 0);
+        counts.put("MEDIUM", 0);
+        counts.put("LOW", 0);
+
+        for (DetailReport report : detailReports) {
+            for (DetailReport.Issue issue : report.getIssues()) {
+                String severity = issue.getSeverity();
+                counts.put(severity, counts.getOrDefault(severity, 0) + 1);
+            }
+        }
+
+        return counts;
     }
 
     /**

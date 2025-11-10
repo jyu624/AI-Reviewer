@@ -1,0 +1,68 @@
+summary:
+  # 项目总评评估维度
+  dimensions:
+    - name: 代码质量
+      weight: 0.30
+      description: 整体代码可读性、可维护性、规范性评估
+
+    - name: 安全性
+      weight: 0.25
+      description: 安全漏洞、潜在风险评估
+
+    - name: 性能
+      weight: 0.20
+      description: 算法效率、资源使用、并发处理评估
+
+    - name: 架构设计
+      weight: 0.15
+      description: 模块划分、层次结构、设计模式应用评估
+
+    - name: 测试覆盖
+      weight: 0.10
+      description: 单元测试、集成测试覆盖情况评估
+
+  # 评分标准
+  scoring:
+    excellent:
+      range: [90, 100]
+      label: "优秀"
+      description: "代码质量卓越，几乎没有问题"
+
+    good:
+      range: [75, 89]
+      label: "良好"
+      description: "代码质量良好，存在少量改进空间"
+
+    moderate:
+      range: [60, 74]
+      label: "中等"
+      description: "代码质量一般，需要重点改进"
+
+    poor:
+      range: [40, 59]
+      label: "较差"
+      description: "代码质量较差，存在较多问题"
+
+    critical:
+      range: [0, 39]
+      label: "严重"
+      description: "代码质量严重不足，需要全面重构"
+
+  # 输出要求
+  output:
+    sections:
+      - 项目概览（文件数、代码行数、主要技术栈）
+      - 质量评分（各维度得分及总分）
+      - 关键问题汇总（按严重程度分类）
+      - 优秀实践亮点
+      - 改进建议优先级
+      - 技术债务评估
+
+    format: |
+      请以结构化的方式输出项目总评，包含：
+      1. 总体评分和评级
+      2. 各维度得分详情
+      3. 关键发现（Top 5 问题和 Top 3 亮点）
+      4. 优先改进建议（按ROI排序）
+      5. 风险评估（高/中/低风险问题统计）
+
