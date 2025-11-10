@@ -86,7 +86,7 @@ public class Config {
     }
 
     /**
-     * 从 v1.0 配置文件加载（兼容模式）
+     * 从  配置文件加载（兼容模式）
      *
      * 支持的配置文件：
      * - classpath:/reviewer/reviewer.yml

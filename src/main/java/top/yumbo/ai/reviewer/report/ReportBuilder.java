@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 报告生成器 v2.1 - 支持配置文件定义的报告格式和路径
+ * 报告生成器  - 支持配置文件定义的报告格式和路径
  *
  * 存储结构：
  * - {projectPath}-AI/cache/         # 缓存文件
@@ -345,7 +345,7 @@ public class ReportBuilder {
         }
 
         md.append("---\n\n");
-        md.append("*由 AI Reviewer v2.1 生成*\n");
+        md.append("*由 AI Reviewer  生成*\n");
 
         Files.writeString(reportFile, md.toString());
         log.info("生成总报告 (Markdown): {}", reportFile);

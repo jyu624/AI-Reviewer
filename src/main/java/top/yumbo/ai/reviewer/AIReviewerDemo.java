@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.core;
+package top.yumbo.ai.reviewer;
 
 import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.entity.AnalysisResult;
@@ -7,11 +7,11 @@ import top.yumbo.ai.reviewer.exception.AnalysisException;
 import java.nio.file.Paths;
 
 /**
- * AI Reviewer v2.0 演示类
+ * AI Reviewer  演示类
  * 展示简化后的 API 使用方式
  *
- * v2.1 新特性：
- * - 自动加载 v1.0 配置文件（无需修改）
+ *  新特性：
+ * - 自动加载  配置文件（无需修改）
  * - 支持 classpath:/reviewer/*.yml 配置
  * - 支持项目根目录 reviewer.yml 覆盖
  */
@@ -19,7 +19,7 @@ public class AIReviewerDemo {
 
     public static void main(String[] args) {
         System.out.println("===========================================");
-        System.out.println("  AI Reviewer v2.1 - 兼容 v1.0 配置文件");
+        System.out.println("  AI Reviewer  - 兼容  配置文件");
         System.out.println("===========================================\n");
 
         System.out.println("📝 配置加载说明：");
@@ -40,7 +40,7 @@ public class AIReviewerDemo {
     }
 
     /**
-     * 示例 1: 最简单的使用方式（自动加载 v1.0 配置文件）
+     * 示例 1: 最简单的使用方式（自动加载  配置文件）
      */
     private static void example1_SimpleUsage() {
         System.out.println("\n【示例 1】最简单的使用方式（自动加载配置文件）");

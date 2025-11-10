@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.core;
+package top.yumbo.ai.reviewer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * AI Reviewer v2.0 - 主入口类（简化版）
+ * AI Reviewer  - 主入口类（简化版）
  *
  * 核心特性：
  * - 3层架构：API → Core → Foundation
@@ -57,7 +57,7 @@ public class AIReviewer implements AutoCloseable {
     }
 
     /**
-     * 创建 AIReviewer 实例（自动加载 v1.0 配置文件）
+     * 创建 AIReviewer 实例（自动加载  配置文件）
      *
      * 会自动加载以下配置文件（如果存在）：
      * - classpath:/reviewer/reviewer.yml
@@ -66,13 +66,13 @@ public class AIReviewer implements AutoCloseable {
      */
     public static AIReviewer create(Path projectPath) {
         try {
-            // 优先尝试从 v1.0 配置文件加载
+            // 优先尝试从  配置文件加载
             Config config = Config.fromV1ConfigFiles(projectPath);
-            log.info("已从 v1.0 配置文件加载配置");
+            log.info("已从  配置文件加载配置");
             return new AIReviewer(config);
         } catch (Exception e) {
             // 如果加载失败，使用默认配置
-            log.warn("加载 v1.0 配置文件失败，使用默认配置: {}", e.getMessage());
+            log.warn("加载  配置文件失败，使用默认配置: {}", e.getMessage());
             Config config = Config.defaultConfig(projectPath);
             return new AIReviewer(config);
         }
@@ -104,7 +104,7 @@ public class AIReviewer implements AutoCloseable {
      */
     public AnalysisResult analyze() throws AnalysisException {
         long startTime = System.currentTimeMillis();
-        log.info("========== AI Reviewer v2.0 开始分析 ==========");
+        log.info("========== AI Reviewer  开始分析 ==========");
         log.info("项目路径: {}", config.getProjectPath());
         log.info("配置: {}", config);
 

@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * 配置加载器 - 兼容 v1.0 的配置文件
+ * 配置加载器 - 兼容  的配置文件
  *
  * 支持的配置文件：
  * - reviewer/reviewer.yml (主配置)

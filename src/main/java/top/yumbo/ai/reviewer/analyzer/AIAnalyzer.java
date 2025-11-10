@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * AI 分析器（增强版 v2.1）
+ * AI 分析器（增强版 ）
  *
  * 核心改进：
  * 1. ✅ 断路器模式 (Circuit Breaker) - 防止级联失败
