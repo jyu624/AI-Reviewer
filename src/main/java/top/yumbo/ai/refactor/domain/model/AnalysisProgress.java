@@ -30,7 +30,7 @@ public class AnalysisProgress {
      * 增加完成步骤
      */
     public void incrementCompleted() {
-        if (completedSteps < totalSteps) {
+        if (totalSteps > 0 && completedSteps < totalSteps) {
             completedSteps++;
         }
     }
@@ -75,7 +75,8 @@ public class AnalysisProgress {
      * 是否完成
      */
     public boolean isCompleted() {
-        return completedSteps >= totalSteps && totalSteps > 0;
+        if (totalSteps == 0) return true;
+        return completedSteps >= totalSteps;
     }
 }
 

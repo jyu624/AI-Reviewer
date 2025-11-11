@@ -160,17 +160,45 @@ public class ReportGenerationService implements ReportGenerationUseCase {
     public String generateJsonReport(ReviewReport report) {
         log.info("生成JSON报告: {}", report.getReportId());
 
-        // 简化实现：使用手动JSON构建
+        // 使用手动JSON构建（避免FastJSON依赖）
         StringBuilder json = new StringBuilder();
         json.append("{\n");
-        json.append("  \"reportId\": \"").append(report.getReportId()).append("\",\n");
-        json.append("  \"projectName\": \"").append(report.getProjectName()).append("\",\n");
+        json.append("  \"reportId\": \"").append(escapeJson(report.getReportId())).append("\",\n");
+        json.append("  \"projectName\": \"").append(escapeJson(report.getProjectName())).append("\",\n");
+        json.append("  \"projectPath\": \"").append(escapeJson(report.getProjectPath())).append("\",\n");
         json.append("  \"overallScore\": ").append(report.getOverallScore()).append(",\n");
         json.append("  \"grade\": \"").append(report.getGrade()).append("\",\n");
-        json.append("  \"generatedAt\": \"").append(report.getGeneratedAt()).append("\"\n");
-        json.append("}\n");
+        json.append("  \"generatedAt\": \"").append(report.getGeneratedAt().format(DATE_FORMATTER)).append("\",\n");
+
+        // 维度评分
+        json.append("  \"dimensionScores\": {\n");
+        int scoreCount = 0;
+        for (var entry : report.getDimensionScores().entrySet()) {
+            if (scoreCount > 0) json.append(",\n");
+            json.append("    \"").append(escapeJson(entry.getKey())).append("\": ").append(entry.getValue());
+            scoreCount++;
+        }
+        json.append("\n  },\n");
+
+        // 问题列表
+        json.append("  \"issuesCount\": ").append(report.getIssues().size()).append(",\n");
+        json.append("  \"recommendationsCount\": ").append(report.getRecommendations().size()).append(",\n");
+        json.append("  \"keyFindingsCount\": ").append(report.getKeyFindings().size()).append("\n");
+        json.append("}");
 
         return json.toString();
+    }
+
+    /**
+     * 转义JSON字符串
+     */
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
+                  .replace("\"", "\\\"")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
     }
 
     @Override

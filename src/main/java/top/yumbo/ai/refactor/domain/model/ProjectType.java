@@ -36,7 +36,12 @@ public enum ProjectType {
      * 根据文件扩展名推断项目类型
      */
     public static ProjectType fromExtension(String extension) {
-        return switch (extension.toLowerCase()) {
+        if (extension == null || extension.isEmpty()) {
+            return UNKNOWN;
+        }
+        // 移除开头的点号
+        String ext = extension.startsWith(".") ? extension.substring(1) : extension;
+        return switch (ext.toLowerCase()) {
             case "java" -> JAVA;
             case "py" -> PYTHON;
             case "js", "jsx" -> JAVASCRIPT;

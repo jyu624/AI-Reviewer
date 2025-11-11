@@ -101,6 +101,16 @@ public class ReviewReport {
             return;
         }
 
+        // 如果没有提供权重，使用平均值
+        if (weights == null || weights.isEmpty()) {
+            double sum = 0;
+            for (int score : dimensionScores.values()) {
+                sum += score;
+            }
+            this.overallScore = (int) Math.round(sum / dimensionScores.size());
+            return;
+        }
+
         double totalWeightedScore = 0.0;
         double totalWeight = 0.0;
 

@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import top.yumbo.ai.refactor.application.port.output.AIServicePort;
 import top.yumbo.ai.refactor.application.port.output.CachePort;
 import top.yumbo.ai.refactor.application.port.output.FileSystemPort;
@@ -213,8 +215,6 @@ class ProjectAnalysisServiceTest {
     @Test
     @DisplayName("应该能够取消任务")
     void shouldCancelTask() {
-        when(cachePort.get(anyString())).thenReturn(Optional.empty());
-        when(aiServicePort.analyze(anyString())).thenReturn("AI result");
 
         String taskId = service.analyzeProjectAsync(testProject);
 

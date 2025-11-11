@@ -68,6 +68,7 @@ public class SourceFile {
         UTIL,           // 工具类
         TEST,           // 测试文件
         DOCUMENTATION,  // 文档文件
+        SOURCE_CODE,    // 源码文件
         UNKNOWN         // 未知类型
     }
 }
