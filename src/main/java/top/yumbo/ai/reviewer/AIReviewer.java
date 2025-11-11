@@ -1,156 +1,93 @@
 package top.yumbo.ai.reviewer;
 
+import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.analyzer.AIAnalyzer;
-import top.yumbo.ai.reviewer.analyzer.ChunkSplitter;
 import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.entity.AnalysisResult;
-import top.yumbo.ai.reviewer.entity.FileChunk;
-import top.yumbo.ai.reviewer.entity.SourceFile;
 import top.yumbo.ai.reviewer.exception.AnalysisException;
-import top.yumbo.ai.reviewer.report.ReportBuilder;
 import top.yumbo.ai.reviewer.scanner.FileScanner;
-import top.yumbo.ai.reviewer.service.AIService;
-import top.yumbo.ai.reviewer.service.DeepseekAIService;
+import top.yumbo.ai.reviewer.util.FileUtil;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
- * AI Reviewer 主入口类
- * 
- * 负责协调整个代码分析流程，包括文件扫描、代码分块、AI分析和报告生成
+ * AI Reviewer - 企业级AI驱动的多模态项目智能评审引擎
+ * 主要功能：对大型项目源码进行整体分析、打分和评价
  */
-public class AIReviewer implements AutoCloseable {
+@Slf4j
+public class AIReviewer {
 
     private final Config config;
-    private final AIService aiService;
-    private final ExecutorService executorService;
-    private boolean closed = false;
+    private final FileScanner fileScanner;
+    private final AIAnalyzer aiAnalyzer;
 
-    private AIReviewer(Config config) {
+    public AIReviewer(Config config) {
         this.config = config;
-        this.aiService = createAIService(config);
-        this.executorService = Executors.newFixedThreadPool(config.getConcurrency());
+        this.fileScanner = new FileScanner(config);
+        this.aiAnalyzer = new AIAnalyzer(config);
     }
 
     /**
-     * 使用项目路径创建 AIReviewer 实例
-     * 
-     * @param projectPath 项目路径
-     * @return AIReviewer 实例
-     */
-    public static AIReviewer create(String projectPath) {
-        Config config = Config.builder()
-                .projectPath(projectPath)
-                .build();
-        return new AIReviewer(config);
-    }
-
-    /**
-     * 使用配置对象创建 AIReviewer 实例
-     * 
-     * @param config 配置对象
-     * @return AIReviewer 实例
-     */
-    public static AIReviewer create(Config config) {
-        return new AIReviewer(config);
-    }
-
-    /**
-     * 配置分析参数
-     * 
-     * @param configurer 配置函数
-     * @return 当前 AIReviewer 实例，支持链式调用
-     */
-    public AIReviewer configure(Configurer configurer) {
-        configurer.configure(config);
-        return this;
-    }
-
-    /**
-     * 执行代码分析
-     * 
+     * 执行项目分析
+     * @param projectPath 项目根目录路径
      * @return 分析结果
-     * @throws AnalysisException 如果分析过程中发生错误
      */
-    public AnalysisResult analyze() {
-        if (closed) {
-            throw new AnalysisException("AIReviewer has been closed");
+    public AnalysisResult analyzeProject(String projectPath) throws AnalysisException {
+        log.info("开始分析项目: {}", projectPath);
+
+        Path rootPath = Paths.get(projectPath);
+        if (!FileUtil.exists(rootPath)) {
+            throw new AnalysisException("项目路径不存在: " + projectPath);
         }
 
         try {
-            // 1. 扫描项目文件
-            FileScanner scanner = new FileScanner(config);
-            List<SourceFile> sourceFiles = scanner.scan();
+            // 1. 预处理：筛选核心文件
+            log.info("步骤1: 预处理项目文件");
+            List<Path> coreFiles = fileScanner.scanCoreFiles(rootPath);
 
-            // 2. 智能分块
-            ChunkSplitter splitter = new ChunkSplitter(config);
-            List<FileChunk> chunks = splitter.split(sourceFiles);
+            // 2. 生成项目结构树
+            log.info("步骤2: 生成项目结构树");
+            String projectStructure = fileScanner.generateProjectStructure(rootPath);
 
-            // 3. AI 分析
-            AIAnalyzer analyzer = new AIAnalyzer(config, aiService, executorService);
-            AnalysisResult result = analyzer.analyze(chunks);
+            // 3. 分批次分析
+            log.info("步骤3: 分批次AI分析");
+            AnalysisResult result = aiAnalyzer.analyzeProject(coreFiles, projectStructure, rootPath);
 
-            // 4. 生成报告
-            ReportBuilder reportBuilder = new ReportBuilder(config);
-            reportBuilder.build(result);
-
+            log.info("项目分析完成");
             return result;
+
         } catch (Exception e) {
-            throw new AnalysisException("分析过程中发生异常", e);
+            log.error("项目分析失败", e);
+            throw new AnalysisException("项目分析失败: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 异步执行代码分析
-     * 
-     * @return 包含分析结果的 CompletableFuture
+     * 配置器类，用于构建AIReviewer实例
      */
-    public CompletableFuture<AnalysisResult> analyzeAsync() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return analyze();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }, executorService);
-    }
+    public static class Configurer {
+        private Config config;
 
-    /**
-     * 创建 AI 服务实例
-     * 
-     * @param config 配置对象
-     * @return AI 服务实例
-     */
-    private AIService createAIService(Config config) {
-        switch (config.getAiPlatform().toLowerCase()) {
-            case "deepseek":
-                return new DeepseekAIService(config);
-            default:
-                throw new AnalysisException("不支持的AI平台: " + config.getAiPlatform());
+        public Configurer() {
+            this.config = new Config();
         }
-    }
 
-    @Override
-    public void close() throws Exception {
-        if (!closed) {
-            closed = true;
-            executorService.shutdown();
-            aiService.close();
+        public Configurer withConfig(Config config) {
+            this.config = config;
+            return this;
+        }
+
+        public AIReviewer build() {
+            return new AIReviewer(config);
         }
     }
 
     /**
-     * 配置函数接口
+     * 静态方法创建配置器
      */
-    @FunctionalInterface
-    public interface Configurer {
-        void configure(Config config);
+    public static Configurer builder() {
+        return new Configurer();
     }
 }

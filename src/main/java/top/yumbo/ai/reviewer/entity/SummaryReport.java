@@ -1,34 +1,38 @@
 package top.yumbo.ai.reviewer.entity;
 
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.util.List;
 
 /**
- * 概要报告实体
- * 
- * 包含项目的整体概要信息
+ * 摘要报告
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class SummaryReport {
 
-    /**
-     * 核心功能
-     */
-    private String coreFunction;
+    private String title;
+    private String content;
+    private List<String> keyFindings;
+    private List<String> recommendations;
+    private String analysisTime;
 
-    /**
-     * 技术栈
-     */
-    private String techStack;
+    // 评分分布
+    private ScoreDistribution scoreDistribution;
 
-    /**
-     * 启动流程
-     */
-    private String startupFlow;
-
-    /**
-     * 原始响应
-     */
-    private String rawResponse;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ScoreDistribution {
+        private int excellent; // 90-100
+        private int good;      // 70-89
+        private int fair;      // 50-69
+        private int poor;      // 0-49
+    }
 }

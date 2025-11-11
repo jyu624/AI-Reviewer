@@ -1,245 +1,419 @@
 package top.yumbo.ai.reviewer.report;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONWriter;
 import lombok.extern.slf4j.Slf4j;
-import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.entity.AnalysisResult;
-import top.yumbo.ai.reviewer.exception.AnalysisException;
+import top.yumbo.ai.reviewer.entity.DetailReport;
+import top.yumbo.ai.reviewer.entity.SummaryReport;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.Paths;
 
 /**
- * 报告生成器
- * 
- * 负责根据分析结果生成各种格式的报告
+ * 报告构建器 - 生成各种格式的分析报告
  */
 @Slf4j
 public class ReportBuilder {
 
-    private final Config config;
-
-    public ReportBuilder(Config config) {
-        this.config = config;
-    }
-
     /**
-     * 生成报告
-     * 
-     * @param result 分析结果
-     * @throws AnalysisException 如果生成报告时发生错误
+     * 生成Markdown格式的报告
      */
-    public void build(AnalysisResult result) throws AnalysisException {
-        try {
-            // 确保输出目录存在
-            Path outputDir = config.getOutputPath();
-            Files.createDirectories(outputDir);
+    public String generateMarkdownReport(AnalysisResult result) {
+        StringBuilder md = new StringBuilder();
 
-            // 生成各种格式的报告
-            for (String format : config.getReportFormats()) {
-                switch (format.toLowerCase()) {
-                    case "markdown":
-                        buildMarkdownReport(result, outputDir);
-                        break;
-                    case "json":
-                        buildJsonReport(result, outputDir);
-                        break;
-                    case "html":
-                        buildHtmlReport(result, outputDir);
-                        break;
-                    default:
-                        log.warn("不支持的报告格式: {}", format);
-                }
-            }
+        // 标题
+        md.append("# 项目分析报告\n\n");
+        md.append("**项目名称:** ").append(result.getProjectName()).append("\n");
+        md.append("**分析时间:** ").append(formatTimestamp(result.getAnalysisTimestamp())).append("\n\n");
 
-            log.info("报告生成完成，输出目录: {}", outputDir);
+        // 总体评分
+        md.append("## 总体评分\n\n");
+        md.append("**综合评分: ").append(result.getOverallScore()).append("/100**\n\n");
 
-        } catch (IOException e) {
-            throw new AnalysisException("生成报告时发生错误", e);
-        }
-    }
+        // 各维度评分
+        md.append("### 评分详情\n\n");
+        md.append("| 维度 | 评分 | 权重 |\n");
+        md.append("|------|------|------|\n");
+        md.append("| 架构设计 | ").append(result.getArchitectureScore()).append("/100 | 25% |\n");
+        md.append("| 代码质量 | ").append(result.getCodeQualityScore()).append("/100 | 25% |\n");
+        md.append("| 技术债务 | ").append(result.getTechnicalDebtScore()).append("/100 | 25% |\n");
+        md.append("| 功能完整性 | ").append(result.getFunctionalityScore()).append("/100 | 25% |\n");
+        md.append("\n");
 
-    /**
-     * 生成Markdown报告
-     * 
-     * @param result 分析结果
-     * @param outputDir 输出目录
-     * @throws IOException 如果生成报告时发生错误
-     */
-    private void buildMarkdownReport(AnalysisResult result, Path outputDir) throws IOException {
-        StringBuilder report = new StringBuilder();
-
-        // 报告标题
-        report.append("# 代码分析报告\n\n");
-        report.append("生成时间: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n\n");
-
-        // 项目概览
-        report.append("## 项目概览\n\n");
+        // 摘要报告
         if (result.getSummaryReport() != null) {
-            report.append("### 核心功能\n\n");
-            report.append(result.getSummaryReport().getCoreFunction()).append("\n\n");
+            md.append("## 执行摘要\n\n");
+            md.append(result.getSummaryReport().getContent()).append("\n\n");
 
-            report.append("### 技术栈\n\n");
-            report.append(result.getSummaryReport().getTechStack()).append("\n\n");
-
-            report.append("### 启动流程\n\n");
-            report.append(result.getSummaryReport().getStartupFlow()).append("\n\n");
-        }
-
-        // 模块分析
-        report.append("## 模块分析\n\n");
-        if (result.getDetailReports() != null) {
-            for (var detailReport : result.getDetailReports()) {
-                report.append("### ").append(detailReport.getModuleName()).append("\n\n");
-
-                report.append("#### 职责\n\n");
-                report.append(detailReport.getResponsibilities()).append("\n\n");
-
-                report.append("#### 设计模式\n\n");
-                report.append(detailReport.getDesignPatterns()).append("\n\n");
-
-                if (detailReport.getCrossModuleAnalysis() != null) {
-                    report.append("#### 跨模块分析\n\n");
-                    report.append(detailReport.getCrossModuleAnalysis()).append("\n\n");
+            if (result.getSummaryReport().getKeyFindings() != null) {
+                md.append("### 关键发现\n\n");
+                for (String finding : result.getSummaryReport().getKeyFindings()) {
+                    md.append("- ").append(finding).append("\n");
                 }
+                md.append("\n");
+            }
+
+            if (result.getSummaryReport().getRecommendations() != null) {
+                md.append("### 建议改进\n\n");
+                for (String recommendation : result.getSummaryReport().getRecommendations()) {
+                    md.append("- ").append(recommendation).append("\n");
+                }
+                md.append("\n");
             }
         }
 
-        // 保存报告
-        Path reportFile = outputDir.resolve("analysis_report.md");
-        Files.writeString(reportFile, report.toString());
+        // 详细报告
+        if (result.getDetailReport() != null) {
+            appendDetailReport(md, result.getDetailReport());
+        }
 
-        log.info("Markdown报告已生成: {}", reportFile);
+        return md.toString();
     }
 
     /**
-     * 生成JSON报告
-     * 
-     * @param result 分析结果
-     * @param outputDir 输出目录
-     * @throws IOException 如果生成报告时发生错误
+     * 生成HTML格式的报告
      */
-    private void buildJsonReport(AnalysisResult result, Path outputDir) throws IOException {
-        // 添加元数据
-        result.setGeneratedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        result.setProjectPath(config.getProjectPath().toString());
+    public String generateHtmlReport(AnalysisResult result) {
+        StringBuilder html = new StringBuilder();
 
-        // 序列化为JSON
-        String json = JSON.toJSONString(result, JSONWriter.Feature.PrettyFormat);
+        html.append("<!DOCTYPE html>\n");
+        html.append("<html lang=\"zh-CN\">\n");
+        html.append("<head>\n");
+        html.append("    <meta charset=\"UTF-8\">\n");
+        html.append("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
+        html.append("    <title>项目分析报告</title>\n");
+        html.append("    <style>\n");
+        html.append(getCssStyles());
+        html.append("    </style>\n");
+        html.append("</head>\n");
+        html.append("<body>\n");
 
-        // 保存报告
-        Path reportFile = outputDir.resolve("analysis_report.json");
-        Files.writeString(reportFile, json);
+        // 标题
+        html.append("    <div class=\"header\">\n");
+        html.append("        <h1>项目分析报告</h1>\n");
+        html.append("        <div class=\"project-info\">\n");
+        html.append("            <p><strong>项目名称:</strong> ").append(result.getProjectName()).append("</p>\n");
+        html.append("            <p><strong>分析时间:</strong> ").append(formatTimestamp(result.getAnalysisTimestamp())).append("</p>\n");
+        html.append("        </div>\n");
+        html.append("    </div>\n");
 
-        log.info("JSON报告已生成: {}", reportFile);
-    }
+        // 总体评分
+        html.append("    <div class=\"score-section\">\n");
+        html.append("        <h2>总体评分</h2>\n");
+        html.append("        <div class=\"overall-score\">").append(result.getOverallScore()).append("<span>/100</span></div>\n");
 
-    /**
-     * 生成HTML报告
-     * 
-     * @param result 分析结果
-     * @param outputDir 输出目录
-     * @throws IOException 如果生成报告时发生错误
-     */
-    private void buildHtmlReport(AnalysisResult result, Path outputDir) throws IOException {
-        StringBuilder report = new StringBuilder();
+        html.append("        <div class=\"score-grid\">\n");
+        html.append("            <div class=\"score-item\">\n");
+        html.append("                <div class=\"score-label\">架构设计</div>\n");
+        html.append("                <div class=\"score-value\">").append(result.getArchitectureScore()).append("</div>\n");
+        html.append("            </div>\n");
+        html.append("            <div class=\"score-item\">\n");
+        html.append("                <div class=\"score-label\">代码质量</div>\n");
+        html.append("                <div class=\"score-value\">").append(result.getCodeQualityScore()).append("</div>\n");
+        html.append("            </div>\n");
+        html.append("            <div class=\"score-item\">\n");
+        html.append("                <div class=\"score-label\">技术债务</div>\n");
+        html.append("                <div class=\"score-value\">").append(result.getTechnicalDebtScore()).append("</div>\n");
+        html.append("            </div>\n");
+        html.append("            <div class=\"score-item\">\n");
+        html.append("                <div class=\"score-label\">功能完整性</div>\n");
+        html.append("                <div class=\"score-value\">").append(result.getFunctionalityScore()).append("</div>\n");
+        html.append("            </div>\n");
+        html.append("        </div>\n");
+        html.append("    </div>\n");
 
-        // HTML头部
-        report.append("<!DOCTYPE html>\n");
-        report.append("<html lang=\"zh-CN\">\n");
-        report.append("<head>\n");
-        report.append("    <meta charset=\"UTF-8\">\n");
-        report.append("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
-        report.append("    <title>代码分析报告</title>\n");
-        report.append("    <style>\n");
-        report.append("        body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 1200px; margin: 0 auto; padding: 20px; }\n");
-        report.append("        h1, h2, h3 { color: #333; }\n");
-        report.append("        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }\n");
-        report.append("        h2 { border-bottom: 1px solid #eee; padding-bottom: 8px; }\n");
-        report.append("        .metadata { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }\n");
-        report.append("        .module { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }\n");
-        report.append("        .module-header { background-color: #f1f1f1; padding: 10px 15px; font-weight: bold; }\n");
-        report.append("        .module-content { padding: 15px; }\n");
-        report.append("        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }\n");
-        report.append("        code { background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; }\n");
-        report.append("    </style>\n");
-        report.append("</head>\n");
-        report.append("<body>\n");
-
-        // 报告标题和元信息
-        report.append("    <h1>代码分析报告</h1>\n");
-        report.append("    <div class=\"metadata\">\n");
-        report.append("        <p><strong>生成时间:</strong> ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("</p>\n");
-        report.append("        <p><strong>项目路径:</strong> ").append(escapeHtml(config.getProjectPath().toString())).append("</p>\n");
-        report.append("    </div>\n");
-
-        // 项目概览
-        report.append("    <h2>项目概览</h2>\n");
+        // 摘要报告
         if (result.getSummaryReport() != null) {
-            report.append("    <h3>核心功能</h3>\n");
-            report.append("    <p>").append(escapeHtml(result.getSummaryReport().getCoreFunction())).append("</p>\n");
+            html.append("    <div class=\"section\">\n");
+            html.append("        <h2>执行摘要</h2>\n");
+            html.append("        <div class=\"content\">").append(formatToHtml(result.getSummaryReport().getContent())).append("</div>\n");
 
-            report.append("    <h3>技术栈</h3>\n");
-            report.append("    <p>").append(escapeHtml(result.getSummaryReport().getTechStack())).append("</p>\n");
-
-            report.append("    <h3>启动流程</h3>\n");
-            report.append("    <p>").append(escapeHtml(result.getSummaryReport().getStartupFlow())).append("</p>\n");
-        }
-
-        // 模块分析
-        report.append("    <h2>模块分析</h2>\n");
-        if (result.getDetailReports() != null) {
-            for (var detailReport : result.getDetailReports()) {
-                report.append("    <div class=\"module\">\n");
-                report.append("        <div class=\"module-header\">").append(escapeHtml(detailReport.getModuleName())).append("</div>\n");
-                report.append("        <div class=\"module-content\">\n");
-
-                report.append("            <h3>职责</h3>\n");
-                report.append("            <p>").append(escapeHtml(detailReport.getResponsibilities())).append("</p>\n");
-
-                report.append("            <h3>设计模式</h3>\n");
-                report.append("            <p>").append(escapeHtml(detailReport.getDesignPatterns())).append("</p>\n");
-
-                if (detailReport.getCrossModuleAnalysis() != null) {
-                    report.append("            <h3>跨模块分析</h3>\n");
-                    report.append("            <p>").append(escapeHtml(detailReport.getCrossModuleAnalysis())).append("</p>\n");
+            if (result.getSummaryReport().getKeyFindings() != null && !result.getSummaryReport().getKeyFindings().isEmpty()) {
+                html.append("        <h3>关键发现</h3>\n");
+                html.append("        <ul>\n");
+                for (String finding : result.getSummaryReport().getKeyFindings()) {
+                    html.append("            <li>").append(finding).append("</li>\n");
                 }
-
-                report.append("        </div>\n");
-                report.append("    </div>\n");
+                html.append("        </ul>\n");
             }
+
+            if (result.getSummaryReport().getRecommendations() != null && !result.getSummaryReport().getRecommendations().isEmpty()) {
+                html.append("        <h3>建议改进</h3>\n");
+                html.append("        <ul>\n");
+                for (String recommendation : result.getSummaryReport().getRecommendations()) {
+                    html.append("            <li>").append(recommendation).append("</li>\n");
+                }
+                html.append("        </ul>\n");
+            }
+            html.append("    </div>\n");
         }
 
-        // HTML尾部
-        report.append("</body>\n");
-        report.append("</html>\n");
+        html.append("</body>\n");
+        html.append("</html>\n");
 
-        // 保存报告
-        Path reportFile = outputDir.resolve("analysis_report.html");
-        Files.writeString(reportFile, report.toString());
-
-        log.info("HTML报告已生成: {}", reportFile);
+        return html.toString();
     }
 
     /**
-     * 转义HTML特殊字符
-     * 
-     * @param text 原始文本
-     * @return 转义后的文本
+     * 保存报告到文件
      */
-    private String escapeHtml(String text) {
-        if (text == null) {
-            return "";
+    public void saveReport(AnalysisResult result, String filePath, String format) throws IOException {
+        String content;
+        String extension;
+
+        switch (format.toLowerCase()) {
+            case "markdown":
+            case "md":
+                content = generateMarkdownReport(result);
+                extension = ".md";
+                break;
+            case "html":
+                content = generateHtmlReport(result);
+                extension = ".html";
+                break;
+            default:
+                content = generateMarkdownReport(result);
+                extension = ".md";
         }
 
-        return text.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
-                  .replace("\"", "&quot;")
-                  .replace("'", "&#39;");
+        Path path = Paths.get(filePath);
+        if (!filePath.endsWith(extension)) {
+            path = Paths.get(filePath + extension);
+        }
+
+        java.nio.file.Files.writeString(path, content);
+        log.info("报告已保存到: {}", path);
+    }
+
+    /**
+     * 追加详细报告内容
+     */
+    private void appendDetailReport(StringBuilder md, DetailReport detailReport) {
+        if (detailReport.getArchitectureAnalysis() != null) {
+            md.append("## 架构分析\n\n");
+            appendArchitectureAnalysis(md, detailReport.getArchitectureAnalysis());
+        }
+
+        if (detailReport.getCodeQualityAnalysis() != null) {
+            md.append("## 代码质量分析\n\n");
+            appendCodeQualityAnalysis(md, detailReport.getCodeQualityAnalysis());
+        }
+
+        if (detailReport.getTechnicalDebtAnalysis() != null) {
+            md.append("## 技术债务分析\n\n");
+            appendTechnicalDebtAnalysis(md, detailReport.getTechnicalDebtAnalysis());
+        }
+
+        if (detailReport.getFunctionalityAnalysis() != null) {
+            md.append("## 功能分析\n\n");
+            appendFunctionalityAnalysis(md, detailReport.getFunctionalityAnalysis());
+        }
+    }
+
+    private void appendArchitectureAnalysis(StringBuilder md, DetailReport.ArchitectureAnalysis analysis) {
+        md.append("### 概述\n\n");
+        md.append(analysis.getOverview()).append("\n\n");
+
+        if (analysis.getStrengths() != null && !analysis.getStrengths().isEmpty()) {
+            md.append("### 优势\n\n");
+            for (String strength : analysis.getStrengths()) {
+                md.append("- ").append(strength).append("\n");
+            }
+            md.append("\n");
+        }
+
+        if (analysis.getWeaknesses() != null && !analysis.getWeaknesses().isEmpty()) {
+            md.append("### 不足\n\n");
+            for (String weakness : analysis.getWeaknesses()) {
+                md.append("- ").append(weakness).append("\n");
+            }
+            md.append("\n");
+        }
+
+        if (analysis.getRecommendations() != null && !analysis.getRecommendations().isEmpty()) {
+            md.append("### 改进建议\n\n");
+            for (String recommendation : analysis.getRecommendations()) {
+                md.append("- ").append(recommendation).append("\n");
+            }
+            md.append("\n");
+        }
+    }
+
+    private void appendCodeQualityAnalysis(StringBuilder md, DetailReport.CodeQualityAnalysis analysis) {
+        md.append("### 概述\n\n");
+        md.append(analysis.getOverview()).append("\n\n");
+
+        if (analysis.getIssues() != null && !analysis.getIssues().isEmpty()) {
+            md.append("### 发现的问题\n\n");
+            for (String issue : analysis.getIssues()) {
+                md.append("- ").append(issue).append("\n");
+            }
+            md.append("\n");
+        }
+
+        if (analysis.getBestPractices() != null && !analysis.getBestPractices().isEmpty()) {
+            md.append("### 最���实践\n\n");
+            for (String practice : analysis.getBestPractices()) {
+                md.append("- ").append(practice).append("\n");
+            }
+            md.append("\n");
+        }
+    }
+
+    private void appendTechnicalDebtAnalysis(StringBuilder md, DetailReport.TechnicalDebtAnalysis analysis) {
+        md.append("### 概述\n\n");
+        md.append(analysis.getOverview()).append("\n\n");
+
+        if (analysis.getDebts() != null && !analysis.getDebts().isEmpty()) {
+            md.append("### 技术债务\n\n");
+            for (String debt : analysis.getDebts()) {
+                md.append("- ").append(debt).append("\n");
+            }
+            md.append("\n");
+        }
+
+        if (analysis.getRefactoringSuggestions() != null && !analysis.getRefactoringSuggestions().isEmpty()) {
+            md.append("### 重构建议\n\n");
+            for (String suggestion : analysis.getRefactoringSuggestions()) {
+                md.append("- ").append(suggestion).append("\n");
+            }
+            md.append("\n");
+        }
+    }
+
+    private void appendFunctionalityAnalysis(StringBuilder md, DetailReport.FunctionalityAnalysis analysis) {
+        md.append("### 概述\n\n");
+        md.append(analysis.getOverview()).append("\n\n");
+
+        if (analysis.getMissingFeatures() != null && !analysis.getMissingFeatures().isEmpty()) {
+            md.append("### 缺失功能\n\n");
+            for (String feature : analysis.getMissingFeatures()) {
+                md.append("- ").append(feature).append("\n");
+            }
+            md.append("\n");
+        }
+
+        if (analysis.getImprovementSuggestions() != null && !analysis.getImprovementSuggestions().isEmpty()) {
+            md.append("### 改进建议\n\n");
+            for (String suggestion : analysis.getImprovementSuggestions()) {
+                md.append("- ").append(suggestion).append("\n");
+            }
+            md.append("\n");
+        }
+    }
+
+    /**
+     * 获取CSS样式
+     */
+    private String getCssStyles() {
+        return """
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                border-radius: 10px;
+                margin-bottom: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0 0 10px 0;
+                font-size: 2.5em;
+            }
+            .project-info {
+                font-size: 1.1em;
+            }
+            .score-section {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .overall-score {
+                font-size: 4em;
+                font-weight: bold;
+                color: #4CAF50;
+                text-align: center;
+                margin: 20px 0;
+            }
+            .overall-score span {
+                font-size: 0.5em;
+                color: #666;
+            }
+            .score-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-top: 30px;
+            }
+            .score-item {
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            .score-label {
+                font-size: 1.1em;
+                margin-bottom: 10px;
+                color: #666;
+            }
+            .score-value {
+                font-size: 2em;
+                font-weight: bold;
+                color: #2196F3;
+            }
+            .section {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .section h2 {
+                color: #333;
+                border-bottom: 2px solid #667eea;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }
+            .section h3 {
+                color: #555;
+                margin-top: 25px;
+                margin-bottom: 15px;
+            }
+            .content {
+                margin-bottom: 20px;
+            }
+            ul {
+                padding-left: 20px;
+            }
+            li {
+                margin-bottom: 8px;
+            }
+            """;
+    }
+
+    /**
+     * 格式化时间戳
+     */
+    private String formatTimestamp(long timestamp) {
+        return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                .format(new java.util.Date(timestamp));
+    }
+
+    /**
+     * 转换为HTML格式
+     */
+    private String formatToHtml(String text) {
+        if (text == null) return "";
+        return text.replace("\n", "<br>");
     }
 }

@@ -1,54 +1,60 @@
 package top.yumbo.ai.reviewer.entity;
 
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.util.List;
 
 /**
- * 分析结果实体
- * 
- * 包含整个项目的分析结果
+ * 分析结果实体类
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AnalysisResult {
 
-    /**
-     * 概要报告
-     */
+    // 总体评分 (0-100)
+    private int overallScore;
+
+    // 各维度评分
+    private int architectureScore;
+    private int codeQualityScore;
+    private int technicalDebtScore;
+    private int functionalityScore;
+
+    // 报告
     private SummaryReport summaryReport;
+    private DetailReport detailReport;
 
-    /**
-     * 详细报告列表
-     */
-    private List<DetailReport> detailReports;
+    // 分析时间戳
+    private long analysisTimestamp;
 
-    /**
-     * 生成时间
-     */
-    private String generatedAt;
-
-    /**
-     * 项目路径
-     */
+    // 项目信息
+    private String projectName;
     private String projectPath;
+    private String projectType; // java, python, javascript, etc.
 
-    /**
-     * 获取概要内容
-     * 
-     * @return 概要内容
-     */
-    public String getSummary() {
-        if (summaryReport == null) {
-            return "无概要信息";
-        }
+    // 分析的维度
+    private List<String> analyzedDimensions;
 
-        StringBuilder summary = new StringBuilder();
-        summary.append("项目核心功能: ").append(summaryReport.getCoreFunction()).append("\n");
-        summary.append("技术栈: ").append(summaryReport.getTechStack()).append("\n");
-        summary.append("启动流程: ").append(summaryReport.getStartupFlow()).append("\n");
+    // 发现的问题列表
+    private List<Issue> issues;
 
-        return summary.toString();
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Issue {
+        private String type; // architecture, quality, debt, functionality
+        private String severity; // critical, major, minor, info
+        private String title;
+        private String description;
+        private String filePath;
+        private int lineNumber;
+        private String suggestion;
+        private String category;
     }
 }

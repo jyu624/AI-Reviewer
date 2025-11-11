@@ -1,322 +1,277 @@
-# AI Reviewer  - 简化架构实现
+# AI Reviewer - 企业级AI驱动的多模态项目智能评审引擎
 
-> **简化版本**：从 7 层架构简化到 3 层，代码量减少 47%，学习曲线降低 60%
+> 基于大语言模型的代码分析工具，支持多种编程语言的项目整体分析、打分和评价
 
----
+## 🎯 项目特色
 
-## 🎯 架构概览
+- **智能预处理**：自动筛选核心文件，生成项目结构树，解决大模型上下文限制问题
+- **分批次分析**：按"整体→模块→架构"的逻辑渐进式分析，确保分析准确性
+- **多维度评估**：架构设计、代码质量、技术债务、功能完整性全面评估
+- **多种输出格式**：支持Markdown和HTML格式的详细报告
+- **可扩展设计**：支持多种AI服务提供商，易于集成新的分析维度
 
-### 3 层架构设计
+## 🚀 核心功能
+
+### 1. 智能文件筛选
+- 自动识别核心文件（入口文件、配置文件、核心业务代码）
+- 排除冗余内容（依赖库、二进制文件、测试数据）
+- 支持自定义包含/排除规则
+
+### 2. 分层架构分析
+- **第一批次**：项目概览（技术栈识别、功能定位）
+- **第二批次**：模块分析（职责划分、设计模式识别）
+- **第三批次**：架构评估（分层设计、耦合度分析）
+
+### 3. 代码质量评估
+- 代码重复度检测
+- 复杂度分析
+- 命名规范检查
+- 异常处理完善性
+
+### 4. 技术债务识别
+- 过时API使用
+- 硬编码常量
+- 缺少文档的方法
+- 循环依赖问题
+
+## 🛠️ 技术架构
+
+### 3层架构设计
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  L1: API Layer (API 层)                              │
 │  ├─ AIReviewer (主入口类)                            │
+│  ├─ ProjectAnalyzer (命令行工具)                     │
 │  ├─ Config (配置管理)                                │
-│  └─ AIReviewerDemo (示例)                            │
+│  └─ AIReviewerDemo (演示)                            │
 └──────────────────┬──────────────────────────────────┘
                    │ 依赖
                    ▼
 ┌─────────────────────────────────────────────────────┐
 │  L2: Core Layer (核心业务层)                         │
-│  ├─ FileScanner (文件扫描)                           │
-│  ├─ AIAnalyzer (AI 分析)                             │
-│  ├─ ChunkSplitter (代码分块)                         │
-│  └─ ReportBuilder (报告生成)                         │
+│  ├─ FileScanner (文件扫描与筛选)                     │
+│  ├─ AIAnalyzer (AI 分析协调器)                       │
+│  ├─ ChunkSplitter (代码分块器)                       │
+│  └─ ReportBuilder (报告生成器)                       │
 └──────────────────┬──────────────────────────────────┘
                    │ 依赖
                    ▼
 ┌─────────────────────────────────────────────────────┐
 │  L3: Foundation Layer (基础设施层)                   │
 │  ├─ AIService (AI 服务接口)                          │
-│  ├─ DeepseekAIService (Deepseek 实现)                │
-│  ├─ FileUtil (文件工具)                              │
-│  ├─ TokenEstimator (Token 估算)                      │
-│  └─ AnalysisException (统一异常)                     │
+│  ├─ DeepseekAIService (DeepSeek AI 实现)             │
+│  ├─ FileUtil (文件操作工具)                          │
+│  ├─ TokenEstimator (Token 估算器)                    │
+│  └─ AnalysisException (统一异常处理)                 │
 └─────────────────────────────────────────────────────┘
 ```
 
----
+## 📦 依赖说明
 
-## 📦 包结构
-
-```
-top.yumbo.ai.reviewer/
-├── core/                    # L1: API 层
-│   ├── AIReviewer.java     # 主入口类
-│   └── AIReviewerDemo.java # 示例代码
-│
-├── scanner/                 # L2: 文件扫描
-│   └── FileScanner.java
-│
-├── analyzer/                # L2: AI 分析
-│   ├── AIAnalyzer.java     # 分析器
-│   └── ChunkSplitter.java  # 分块器
-│
-├── report/                  # L2: 报告生成
-│   └── ReportBuilder.java
-│
-├── service/                 # L3: AI 服务
-│   ├── AIService.java      # 接口
-│   └── DeepseekAIService.java
-│
-├── entity/                  # 数据模型
-│   ├── SourceFile.java
-│   ├── FileChunk.java
-│   ├── AnalysisResult.java
-│   ├── DetailReport.java
-│   └── SummaryReport.java
-│
-├── config/                  # 配置管理
-│   └── Config.java
-│
-├── util/                    # 工具类
-│   ├── FileUtil.java
-│   └── TokenEstimator.java
-│
-└── exception/               # 异常处理
-    └── AnalysisException.java
-```
-
----
+- **核心框架**: Spring Boot (配置管理)
+- **AI集成**: OkHttp (HTTP客户端), FastJSON2 (JSON处理)
+- **文件处理**: Apache Tika (文件类型检测), Apache POI (Office文档)
+- **工具库**: Lombok (代码简化), SnakeYAML (YAML配置)
+- **代码解析**: ANTLR4 (语法分析)
 
 ## 🚀 快速开始
 
-### 1. 最简单的使用方式
+### 环境要求
 
-```java
-try (AIReviewer reviewer = AIReviewer.create("path/to/project")) {
-    AnalysisResult result = reviewer.analyze();
-    System.out.println(result.getSummary());
-}
+- Java 17+
+- Maven 3.6+
+- DeepSeek API Key (或其他AI服务)
+
+### 安装步骤
+
+1. **克隆项目**
+```bash
+git clone https://github.com/your-repo/ai-reviewer.git
+cd ai-reviewer
 ```
 
-### 2. 自定义配置（流式 API）
-
-```java
-try (AIReviewer reviewer = AIReviewer.create("path/to/project")) {
-    AnalysisResult result = reviewer
-        .configure(config -> config
-            .aiPlatform("deepseek")
-            .model("deepseek-chat")
-            .concurrency(5)
-            .chunkSize(8000)
-            .reportFormats("markdown", "json")
-        )
-        .analyze();
-    
-    System.out.println(result.getSummary());
-}
+2. **配置环境**
+```bash
+# 设置AI服务API密钥
+export DEEPSEEK_API_KEY=your_api_key_here
 ```
 
-### 3. 完整配置（Builder 模式）
+3. **编译项目**
+```bash
+mvn clean compile
+```
+
+4. **运行演示**
+```bash
+mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.AIReviewerDemo"
+```
+
+### 使用方式
+
+#### 命令行工具
+
+```bash
+# 分析当前项目
+java -jar target/ai-reviewer-1.0.jar --project /path/to/project
+
+# 指定配置文件
+java -jar target/ai-reviewer-1.0.jar \
+  --project /path/to/project \
+  --config custom-config.yaml \
+  --output analysis-report.md
+```
+
+#### 编程接口
 
 ```java
-Config config = Config.builder()
-    .projectPath("path/to/project")
-    .outputDir("path/to/output")
-    .aiPlatform("deepseek")
-    .apiKey("your-api-key")
-    .model("deepseek-chat")
-    .maxTokens(4096)
-    .concurrency(3)
-    .retryCount(3)
-    .chunkSize(8000)
-    .includePatterns("*.java", "*.py")
-    .excludePatterns("test", "build")
-    .enableCache(true)
-    .reportFormats("markdown", "json")
+// 创建配置
+Config config = Config.loadDefault();
+
+// 创建评审器
+AIReviewer reviewer = AIReviewer.builder()
+    .withConfig(config)
     .build();
 
-try (AIReviewer reviewer = AIReviewer.create(config)) {
-    AnalysisResult result = reviewer.analyze();
-    // 处理结果...
+// 执行分析
+AnalysisResult result = reviewer.analyzeProject("/path/to/project");
+
+// 生成报告
+ReportBuilder reportBuilder = new ReportBuilder();
+reportBuilder.saveReport(result, "report.md", "markdown");
+reportBuilder.saveReport(result, "report.html", "html");
+```
+
+## ⚙️ 配置说明
+
+### 配置文件 (config.yaml)
+
+```yaml
+# AI服务配置
+aiService:
+  provider: "deepseek"  # AI服务提供商
+  apiKey: "${DEEPSEEK_API_KEY}"  # API密钥
+  baseUrl: "https://api.deepseek.com/v1"  # 服务地址
+  model: "deepseek-chat"  # 模型名称
+  maxTokens: 4000  # 最大token数
+  temperature: 0.3  # 温度参数
+
+# 文件扫描配置
+fileScan:
+  includePatterns:  # 包含的文件模式
+    - "*.java"
+    - "*.py"
+    - "*.js"
+  excludePatterns:  # 排除的文件模式
+    - "*.log"
+    - "*.tmp"
+  maxFileSize: 1024  # 最大文件大小(KB)
+  maxFilesCount: 200  # 最大文件数量
+
+# 分析配置
+analysis:
+  analysisDimensions:  # 分析维度
+    - "architecture"
+    - "code_quality"
+    - "technical_debt"
+    - "functionality"
+  batchSize: 10  # 批处理大小
+```
+
+## 📊 输出示例
+
+### 控制台输出
+```
+=== 项目分析结果 ===
+项目路径: /path/to/project
+总体评分: 82/100
+架构评分: 85/100
+代码质量评分: 78/100
+技术债务评分: 72/100
+功能评分: 88/100
+
+=== 详细报告 ===
+本次分析对项目的架构设计、代码质量、技术债务和功能完整性进行了全面评估...
+```
+
+### Markdown报告
+```markdown
+# 项目分析报告
+
+**项目名称:** MyProject
+**分析时间:** 2025-01-11 14:30:00
+
+## 总体评分
+**综合评分: 82/100**
+
+### 评分详情
+| 维度 | 评分 | 权重 |
+|------|------|------|
+| 架构设计 | 85/100 | 25% |
+| 代码质量 | 78/100 | 25% |
+| 技术债务 | 72/100 | 25% |
+| 功能完整性 | 88/100 | 25% |
+
+## 执行摘要
+本次分析显示项目整体表现良好，但在技术债务方面需要关注...
+```
+
+## 🔧 扩展开发
+
+### 添加新的AI服务提供商
+
+1. 实现AIService接口
+```java
+public class CustomAIService implements AIService {
+    // 实现分析方法
 }
 ```
 
----
-
-## 📊 核心流程
-
-```
-输入：项目路径
-    │
-    ▼
-┌────────────────┐
-│ 1. FileScanner │  扫描项目文件
-│    • 递归遍历   │  • 类型识别
-│    • 过滤文件   │  • Token 估算
-└────────┬───────┘
-         │ List<SourceFile>
-         ▼
-┌────────────────┐
-│ 2. ChunkSplitter│ 智能分块
-│    • 小文件合并  │  • 大文件拆分
-└────────┬───────┘
-         │ List<FileChunk>
-         ▼
-┌────────────────┐
-│ 3. AIAnalyzer  │  AI 分析
-│    • 并发调用   │  • 失败重试
-│    • 结果聚合   │
-└────────┬───────┘
-         │ AnalysisResult
-         ▼
-┌────────────────┐
-│ 4. ReportBuilder│ 生成报告
-│    • Markdown   │  • JSON
-└────────┬───────┘
-         │
-         ▼
-    输出：报告文件
-```
-
----
-
-## 🎨 核心特性
-
-### 1. **简洁的 API**
-- ✅ 流式调用：`create().configure().analyze()`
-- ✅ 自动资源管理：实现 `AutoCloseable`
-- ✅ Builder 模式：灵活配置
-
-### 2. **统一的配置**
-- ✅ 单一配置对象：`Config`
-- ✅ 环境变量支持：`AI_API_KEY`
-- ✅ 默认值合理：开箱即用
-
-### 3. **清晰的职责**
-- ✅ FileScanner：文件扫描
-- ✅ AIAnalyzer：AI 分析
-- ✅ ReportBuilder：报告生成
-
-### 4. **健壮的错误处理**
-- ✅ 统一异常：`AnalysisException`
-- ✅ 错误类型：`ErrorType` 枚举
-- ✅ 自动重试：指数退避
-
----
-
-## 📈 架构对比
-
-| 维度 |  (旧架构) |  (新架构) | 改善 |
-|------|--------------|--------------|------|
-| **架构层次** | 7 层 | 3 层 | ⬇️ 57% |
-| **包数量** | 20+ | 10 个 | ⬇️ 50% |
-| **核心类数量** | 100+ | ~20 | ⬇️ 80% |
-| **配置字段** | 20+ | 10 | ⬇️ 50% |
-| **调用链深度** | 5-7 层 | 2-3 层 | ⬇️ 50% |
-| **代码行数** | ~15000 | ~1500 | ⬇️ 90% |
-
-### 使用方式对比
-
-** (旧架构)**:
+2. 在AIAnalyzer中注册
 ```java
-// 需要手动初始化多个组件
-AIConfigLoader aiConfigLoader = new AIConfigLoader();
-AIConfig aiConfig = aiConfigLoader.load();
-AIService aiService = new DeepseekClient(aiConfig);
-RuntimeContext context = new RuntimeContext(projectPath, aiService);
-AnalysisOrchestrator orchestrator = new AnalysisOrchestrator(context);
-try {
-    AnalysisResult result = orchestrator.execute();
-} finally {
-    context.close();
-}
-```
-
-** (新架构)**:
-```java
-// 一行代码完成分析
-try (AIReviewer reviewer = AIReviewer.create(projectPath)) {
-    AnalysisResult result = reviewer.analyze();
-}
-```
-
----
-
-## 🔑 设计原则
-
-### 1. **单一职责原则 (SRP)**
-- 每个类只负责一个功能
-- `FileScanner` 只负责扫描，不做分析
-- `AIAnalyzer` 只负责分析，不管文件扫描
-
-### 2. **依赖倒置原则 (DIP)**
-- 依赖接口而非实现
-- `AIAnalyzer` 依赖 `AIService` 接口
-- 可以轻松替换不同的 AI 服务实现
-
-### 3. **开闭原则 (OCP)**
-- 对扩展开放，对修改关闭
-- 新增 AI 平台：实现 `AIService` 接口即可
-- 新增报告格式：扩展 `ReportBuilder` 即可
-
-### 4. **接口隔离原则 (ISP)**
-- 接口最小化，只包含必要方法
-- `AIService` 只有 3 个核心方法
-- 避免臃肿的接口
-
----
-
-## 🛠️ 扩展指南
-
-### 添加新的 AI 平台
-
-1. 实现 `AIService` 接口：
-```java
-public class OpenAIService implements AIService {
-    @Override
-    public String analyze(String prompt, int maxTokens) {
-        // 调用 OpenAI API
+private AIService createAIService(Config config) {
+    switch (config.getAiService().getProvider()) {
+        case "custom":
+            return new CustomAIService(config.getAiService());
+        // ...
     }
-    
-    @Override
-    public int getMaxTokens() { return 4096; }
-    
-    @Override
-    public String getModelName() { return "gpt-4"; }
 }
 ```
 
-2. 在 `AIReviewer` 中注册：
+### 添加新的分析维度
+
+1. 在配置中添加维度
+```yaml
+analysis:
+  analysisDimensions:
+    - "security"  # 新增安全分析维度
+```
+
+2. 在AIAnalyzer中实现分析逻辑
 ```java
-switch (config.getAiPlatform()) {
-    case "deepseek" -> new DeepseekAIService(config);
-    case "openai" -> new OpenAIService(config);  // 新增
+private int calculateSecurityScore(List<ModuleAnalysis> analyses) {
+    // 实现安全评分逻辑
 }
 ```
 
-### 添加新的报告格式
+## 🤝 贡献指南
 
-在 `ReportBuilder` 中添加新的生成方法：
-```java
-private void generatePdfReport(AnalysisResult result, Path outputDir) {
-    // PDF 生成逻辑
-}
-```
-
----
-
-## 📝 开发日志
-
-### .0 (2025-11-10)
-- ✅ 架构简化：从 7 层减少到 3 层
-- ✅ 包结构优化：从 20+ 包减少到 10 个
-- ✅ API 简化：流式调用 + Builder 模式
-- ✅ 配置统一：单一 Config 对象
-- ✅ 异常统一：AnalysisException + ErrorType
-- ✅ 资源管理：实现 AutoCloseable
-
----
-
-## 🙏 致谢
-
-感谢  版本的贡献者，为  的简化提供了宝贵经验。
-
----
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
 
 ## 📄 许可证
 
-与主项目保持一致
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
+## 🙏 致谢
+
+- [DeepSeek](https://platform.deepseek.com/) - 提供强大的AI分析能力
+- [GitHub Copilot](https://github.com/features/copilot) - 提供智能代码提示
+- 所有贡献者和用户
+
+---
+
+**注意**: 使用前请确保遵守相关法律法规和AI服务的使用条款。

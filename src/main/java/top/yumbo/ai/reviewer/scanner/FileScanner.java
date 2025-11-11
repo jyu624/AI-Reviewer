@@ -5,271 +5,255 @@ import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.entity.SourceFile;
 import top.yumbo.ai.reviewer.exception.AnalysisException;
 import top.yumbo.ai.reviewer.util.FileUtil;
-import top.yumbo.ai.reviewer.util.TokenEstimator;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 文件扫描器
- * 
- * 负责扫描项目文件，过滤并收集需要分析的源文件
+ * 文件扫描器 - 负责扫描和筛选项目文件
  */
 @Slf4j
 public class FileScanner {
 
-    private final Config config;
-    private final TokenEstimator tokenEstimator;
+    private final Config.FileScanConfig scanConfig;
 
     public FileScanner(Config config) {
-        this.config = config;
-        this.tokenEstimator = new TokenEstimator();
+        this.scanConfig = config.getFileScan();
     }
 
     /**
-     * 扫描项目文件
-     * 
-     * @return 源文件列表
-     * @throws AnalysisException 如果扫描过程中发生错误
+     * 扫描核心文件
+     * @param projectRoot 项目根目录
+     * @return 核心文件列表
      */
-    public List<SourceFile> scan() throws AnalysisException {
+    public List<Path> scanCoreFiles(Path projectRoot) throws AnalysisException {
+        log.info("开始扫描项目核心文件: {}", projectRoot);
+
         try {
-            Path projectPath = config.getProjectPath();
-            log.info("开始扫描项目文件: {}", projectPath.toAbsolutePath());
+            List<Path> allFiles = scanAllFiles(projectRoot);
+            List<Path> coreFiles = filterCoreFiles(allFiles, projectRoot);
 
-            // 生成项目结构树
-            generateProjectTree(projectPath);
+            log.info("扫描完成，共找到 {} 个文件，其中 {} 个为核心文件",
+                    allFiles.size(), coreFiles.size());
 
-            // 扫描源文件
-            List<SourceFile> sourceFiles = scanSourceFiles(projectPath);
-
-            // 按优先级排序
-            sourceFiles = prioritizeFiles(sourceFiles);
-
-            // 应用 Top K 选择
-            if (config.getTopK() > 0 && sourceFiles.size() > config.getTopK()) {
-                sourceFiles = sourceFiles.subList(0, config.getTopK());
-            }
-
-            log.info("扫描完成，共找到 {} 个源文件", sourceFiles.size());
-            return sourceFiles;
+            return coreFiles.stream()
+                    .limit(scanConfig.getMaxFilesCount())
+                    .collect(Collectors.toList());
 
         } catch (IOException e) {
-            throw new AnalysisException("扫描项目文件时发生错误", e);
+            throw new AnalysisException("文件扫描失败: " + e.getMessage(), e);
         }
     }
 
     /**
      * 生成项目结构树
-     * 
-     * @param projectPath 项目路径
-     * @throws IOException 如果生成项目结构树时发生错误
+     * @param projectRoot 项目根目录
+     * @return 项目结构字符串
      */
-    private void generateProjectTree(Path projectPath) throws IOException {
-        Path outputPath = config.getOutputPath();
-        Files.createDirectories(outputPath);
+    public String generateProjectStructure(Path projectRoot) throws AnalysisException {
+        log.info("生成项目结构树: {}", projectRoot);
 
-        Path treeFile = outputPath.resolve("project_structure.txt");
+        try {
+            StringBuilder structure = new StringBuilder();
+            structure.append(projectRoot.getFileName()).append("/\n");
+            buildDirectoryTree(projectRoot, structure, "", 4); // 限制深度为4层
 
-        try (Stream<String> lines = Files.walk(projectPath)
-                .filter(path -> {
-                    try {
-                        return !Files.isHidden(path);
-                    } catch (IOException e) {
-                        return false;
-                    }
-                })
-                .filter(path -> !shouldExclude(path))
-                .sorted()
-                .map(path -> formatTreePath(projectPath, path))
-                .filter(line -> line != null)) {
+            return structure.toString();
 
-            Files.write(treeFile, (Iterable<String>) lines::iterator);
-            log.info("项目结构树已生成: {}", treeFile);
+        } catch (IOException e) {
+            throw new AnalysisException("生成项目结构失败: " + e.getMessage(), e);
         }
     }
 
     /**
-     * 扫描源文件
-     * 
-     * @param projectPath 项目路径
-     * @return 源文件列表
-     * @throws IOException 如果扫描源文件时发生错误
+     * 扫描所有文件
      */
-    private List<SourceFile> scanSourceFiles(Path projectPath) throws IOException {
-        try (Stream<Path> paths = Files.walk(projectPath)) {
+    private List<Path> scanAllFiles(Path projectRoot) throws IOException {
+        try (Stream<Path> paths = Files.walk(projectRoot)) {
             return paths
                     .filter(Files::isRegularFile)
-                    .filter(path -> {
-                        try {
-                            return !Files.isHidden(path);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .filter(path -> !shouldExclude(path))
-                    .filter(this::shouldInclude)
-                    .map(path -> createSourceFile(projectPath, path))
+                    .filter(this::shouldIncludeFile)
                     .collect(Collectors.toList());
         }
     }
 
     /**
-     * 判断路径是否应该被排除
-     * 
-     * @param path 文件路径
-     * @return 如果应该被排除返回 true，否则返回 false
+     * 筛选核心文件
      */
-    private boolean shouldExclude(Path path) {
-        String pathStr = path.toString().replace("\\", "/");
-
-        return config.getExcludePatterns().stream()
-                .anyMatch(pattern -> pathStr.contains(pattern));
-    }
-
-    /**
-     * 判断文件是否应该被包含
-     * 
-     * @param path 文件路径
-     * @return 如果应该被包含返回 true，否则返回 false
-     */
-    private boolean shouldInclude(Path path) {
-        String fileName = path.getFileName().toString();
-
-        return config.getIncludePatterns().stream()
-                .anyMatch(pattern -> FileUtil.matchesPattern(fileName, pattern));
-    }
-
-    /**
-     * 创建源文件对象
-     * 
-     * @param projectPath 项目路径
-     * @param filePath 文件路径
-     * @return 源文件对象
-     */
-    private SourceFile createSourceFile(Path projectPath, Path filePath) {
-        try {
-            String relativePath = projectPath.relativize(filePath).toString();
-            String content = Files.readString(filePath);
-            int tokenCount = tokenEstimator.estimate(content);
-
-            return SourceFile.builder()
-                    .path(relativePath)
-                    .absolutePath(filePath.toString())
-                    .content(content)
-                    .tokenCount(tokenCount)
-                    .fileType(FileUtil.getFileType(filePath))
-                    .build();
-
-        } catch (IOException e) {
-            log.warn("无法读取文件: {}", filePath, e);
-            return SourceFile.builder()
-                    .path(projectPath.relativize(filePath).toString())
-                    .absolutePath(filePath.toString())
-                    .content("")
-                    .tokenCount(0)
-                    .fileType(FileUtil.getFileType(filePath))
-                    .build();
-        }
-    }
-
-    /**
-     * 格式化树路径
-     * 
-     * @param projectPath 项目路径
-     * @param path 文件路径
-     * @return 格式化后的路径字符串
-     */
-    private String formatTreePath(Path projectPath, Path path) {
-        int depth = projectPath.relativize(path).getNameCount();
-        if (depth > config.getTreeDepth()) {
-            return null;
-        }
-
-        StringBuilder indent = new StringBuilder();
-        for (int i = 0; i < depth; i++) {
-            indent.append("│   ");
-        }
-
-        if (Files.isDirectory(path)) {
-            return indent + "├── " + path.getFileName() + "/";
-        } else {
-            return indent + "├── " + path.getFileName();
-        }
-    }
-
-    /**
-     * 按优先级排序文件
-     * 
-     * @param sourceFiles 源文件列表
-     * @return 排序后的源文件列表
-     */
-    private List<SourceFile> prioritizeFiles(List<SourceFile> sourceFiles) {
-        return sourceFiles.stream()
-                .sorted((a, b) -> {
-                    // 优先级规则：
-                    // 1. 入口文件（如 main.java, app.py）
-                    // 2. 配置文件（如 pom.xml, package.json）
-                    // 3. 核心模块（如 service, controller）
-                    // 4. 工具类
-                    // 5. 按文件大小（大文件优先）
-
-                    int aPriority = calculatePriority(a);
-                    int bPriority = calculatePriority(b);
-
-                    if (aPriority != bPriority) {
-                        return Integer.compare(bPriority, aPriority); // 高优先级在前
-                    }
-
-                    return Integer.compare(b.getTokenCount(), a.getTokenCount()); // 大文件在前
-                })
+    private List<Path> filterCoreFiles(List<Path> allFiles, Path projectRoot) {
+        return allFiles.stream()
+                .filter(path -> isCoreFile(path, projectRoot))
+                .sorted(this::compareFilePriority)
                 .collect(Collectors.toList());
     }
 
     /**
-     * 计算文件优先级
-     * 
-     * @param sourceFile 源文件
-     * @return 优先级分数
+     * 判断是否应该包���文件
      */
-    private int calculatePriority(SourceFile sourceFile) {
-        String path = sourceFile.getPath().toLowerCase();
+    private boolean shouldIncludeFile(Path path) {
+        String fileName = path.getFileName().toString();
 
-        // 入口文件
-        if (path.contains("main.") || path.contains("app.") || path.contains("index.")) {
-            return 100;
+        // 检查排除模式
+        for (String excludePattern : scanConfig.getExcludePatterns()) {
+            if (matchesPattern(fileName, excludePattern)) {
+                return false;
+            }
         }
 
-        // 配置文件
-        if (path.endsWith("pom.xml") || path.endsWith("package.json") || 
-            path.endsWith("config.yml") || path.endsWith("config.yaml") ||
-            path.endsWith("application.properties") || path.endsWith("application.yml")) {
-            return 90;
+        // 检查包含模式
+        for (String includePattern : scanConfig.getIncludePatterns()) {
+            if (matchesPattern(fileName, includePattern)) {
+                return true;
+            }
         }
 
-        // 核心模块
-        if (path.contains("service") || path.contains("controller") || 
-            path.contains("api") || path.contains("core")) {
-            return 80;
+        // 检查文件大小
+        try {
+            long sizeKB = Files.size(path) / 1024;
+            if (sizeKB > scanConfig.getMaxFileSize()) {
+                log.debug("跳过大文件: {} ({} KB)", path, sizeKB);
+                return false;
+            }
+        } catch (IOException e) {
+            log.warn("无法获取文件大小: {}", path);
+            return false;
         }
 
-        // 数据模型
-        if (path.contains("model") || path.contains("entity") || path.contains("dto")) {
-            return 70;
+        return true;
+    }
+
+    /**
+     * 判断是否为核心文件
+     */
+    private boolean isCoreFile(Path path, Path projectRoot) {
+        String relativePath = projectRoot.relativize(path).toString();
+        String fileName = path.getFileName().toString();
+
+        // 检查核心文件模式
+        for (String corePattern : scanConfig.getCoreFilePatterns()) {
+            if (matchesPattern(fileName, corePattern) || matchesPattern(relativePath, corePattern)) {
+                return true;
+            }
         }
 
-        // 工具类
-        if (path.contains("util") || path.contains("helper")) {
-            return 60;
+        // 特殊文件类型
+        if (isEntryPoint(fileName) || isConfigFile(fileName) || isDocumentation(fileName)) {
+            return true;
         }
 
-        // 默认优先级
-        return 50;
+        // 排除测试文件（如果配置了）
+        if (!scanConfig.isIncludeTests() && isTestFile(relativePath)) {
+            return false;
+        }
+
+        // 排除依赖目录（如果配置了）
+        if (!scanConfig.isIncludeDependencies() && isDependencyDirectory(relativePath)) {
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * 文件优先级比较（核心文件优先）
+     */
+    private int compareFilePriority(Path path1, Path path2) {
+        boolean core1 = isCoreFile(path1, path1.getParent());
+        boolean core2 = isCoreFile(path2, path2.getParent());
+
+        if (core1 && !core2) return -1;
+        if (!core1 && core2) return 1;
+
+        // 相同优先级，按路径排序
+        return path1.compareTo(path2);
+    }
+
+    /**
+     * 构建目录树
+     */
+    private void buildDirectoryTree(Path dir, StringBuilder structure, String prefix, int maxDepth) throws IOException {
+        if (maxDepth <= 0) return;
+
+        List<Path> children = Files.list(dir)
+                .sorted()
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < children.size(); i++) {
+            Path child = children.get(i);
+            boolean isLast = (i == children.size() - 1);
+
+            structure.append(prefix)
+                    .append(isLast ? "└── " : "├── ")
+                    .append(child.getFileName());
+
+            if (Files.isDirectory(child)) {
+                structure.append("/\n");
+                String newPrefix = prefix + (isLast ? "    " : "│   ");
+                buildDirectoryTree(child, structure, newPrefix, maxDepth - 1);
+            } else {
+                structure.append("\n");
+            }
+        }
+    }
+
+    /**
+     * 模式匹配
+     */
+    private boolean matchesPattern(String text, String pattern) {
+        // 简单模式匹配，支持*通配符
+        String regex = pattern.replace("*", ".*");
+        return text.matches(regex);
+    }
+
+    /**
+     * 判断是否为入口点文件
+     */
+    private boolean isEntryPoint(String fileName) {
+        return fileName.matches(".*(main|app|index|startup|bootstrap)\\..*") ||
+               fileName.equals("Main.java") || fileName.equals("App.java") ||
+               fileName.equals("main.py") || fileName.equals("__main__.py") ||
+               fileName.equals("index.js") || fileName.equals("app.js");
+    }
+
+    /**
+     * 判断是否为配置文件
+     */
+    private boolean isConfigFile(String fileName) {
+        return fileName.matches(".*\\.(yaml|yml|json|xml|properties|config|conf|ini)$") ||
+               fileName.matches("(package|pom|build|gradle|makefile|dockerfile|docker-compose)\\..*");
+    }
+
+    /**
+     * 判断是否为文档文件
+     */
+    private boolean isDocumentation(String fileName) {
+        return fileName.matches(".*\\.(md|txt|rst|adoc)$") ||
+               fileName.matches("(README|CHANGELOG|ARCHITECTURE|CONTRIBUTING).*");
+    }
+
+    /**
+     * 判断是否为测试文件
+     */
+    private boolean isTestFile(String relativePath) {
+        return relativePath.contains("/test/") || relativePath.contains("\\test\\") ||
+               relativePath.matches(".*Test\\..*") || relativePath.matches(".*Spec\\..*");
+    }
+
+    /**
+     * 判断是否为依赖目录
+     */
+    private boolean isDependencyDirectory(String relativePath) {
+        return relativePath.startsWith("node_modules/") ||
+               relativePath.startsWith("target/") ||
+               relativePath.startsWith("build/") ||
+               relativePath.startsWith("dist/") ||
+               relativePath.startsWith("venv/") ||
+               relativePath.startsWith(".git/") ||
+               relativePath.startsWith(".svn/");
     }
 }

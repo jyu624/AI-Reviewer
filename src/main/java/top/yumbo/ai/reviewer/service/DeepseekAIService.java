@@ -8,118 +8,168 @@ import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.exception.AnalysisException;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Deepseek AI服务实现
- * 
- * 负责与Deepseek API交互，提供代码分析能力
+ * DeepSeek AI服务实现
  */
 @Slf4j
 public class DeepseekAIService implements AIService {
 
-    private static final String API_URL = "https://api.deepseek.com/v1/chat/completions";
-    private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
+    private static final String DEFAULT_BASE_URL = "https://api.deepseek.com/v1";
+    private static final String DEFAULT_MODEL = "deepseek-chat";
+    private static final int DEFAULT_MAX_TOKENS = 4000;
+    private static final double DEFAULT_TEMPERATURE = 0.3;
 
-    private final Config config;
     private final OkHttpClient httpClient;
-    private boolean closed = false;
+    private final String apiKey;
+    private final String baseUrl;
+    private final String model;
+    private final int maxTokens;
+    private final double temperature;
 
-    public DeepseekAIService(Config config) {
-        this.config = config;
+    public DeepseekAIService(Config.AIServiceConfig config) {
+        this.apiKey = config.getApiKey();
+        this.baseUrl = config.getBaseUrl() != null ? config.getBaseUrl() : DEFAULT_BASE_URL;
+        this.model = config.getModel() != null ? config.getModel() : DEFAULT_MODEL;
+        this.maxTokens = config.getMaxTokens() > 0 ? config.getMaxTokens() : DEFAULT_MAX_TOKENS;
+        this.temperature = config.getTemperature() >= 0 ? config.getTemperature() : DEFAULT_TEMPERATURE;
+
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
-                .writeTimeout(120, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
+
+        log.info("初始化DeepSeek AI服务: model={}, baseUrl={}", model, baseUrl);
     }
 
     @Override
-    public String analyze(String prompt, int maxTokens) {
-        if (closed) {
-            throw new AnalysisException("DeepseekAIService has been closed");
-        }
+    public String analyze(String prompt) throws AnalysisException {
+        log.debug("开始AI分析，提示词长度: {}", prompt.length());
 
         try {
-            // 构建请求体
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", config.getModel());
-            requestBody.put("messages", Collections.singletonList(
-                    new JSONObject() {{
-                        put("role", "user");
-                        put("content", prompt);
-                    }}
-            ));
-            requestBody.put("max_tokens", maxTokens);
-            requestBody.put("temperature", 0.3);
-            requestBody.put("stream", false);
-
-            // 创建请求
-            RequestBody body = RequestBody.create(requestBody.toString(), JSON_MEDIA_TYPE);
-            Request request = new Request.Builder()
-                    .url(API_URL)
-                    .header("Authorization", "Bearer " + config.getApiKey())
-                    .header("Content-Type", "application/json")
-                    .post(body)
-                    .build();
-
-            // 发送请求
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "未知错误";
-                    throw new AnalysisException("Deepseek API请求失败: " + response.code() + ", " + errorBody);
-                }
-
-                // 解析响应
-                String responseBody = response.body() != null ? response.body().string() : "";
-                JSONObject jsonResponse = JSON.parseObject(responseBody);
-
-                if (jsonResponse.containsKey("choices") && 
-                    jsonResponse.getJSONArray("choices").size() > 0) {
-
-                    JSONObject choice = jsonResponse.getJSONArray("choices").getJSONObject(0);
-                    JSONObject message = choice.getJSONObject("message");
-
-                    if (message != null && message.containsKey("content")) {
-                        return message.getString("content");
-                    }
-                }
-
-                throw new AnalysisException("无法解析Deepseek API响应: " + responseBody);
-            }
+            String requestBody = buildRequestBody(prompt);
+            String response = makeApiCall(requestBody);
+            return parseResponse(response);
 
         } catch (IOException e) {
-            throw new AnalysisException("调用Deepseek API时发生IO异常", e);
+            log.error("AI服务调用失败", e);
+            throw new AnalysisException(AnalysisException.ErrorType.AI_SERVICE_ERROR,
+                    "AI服务调用失败: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public int getMaxTokens() {
-        return config.getMaxTokens();
-    }
+    public String[] analyzeBatch(String[] prompts) throws AnalysisException {
+        String[] results = new String[prompts.length];
 
-    @Override
-    public String getModelName() {
-        return config.getModel();
-    }
-
-    @Override
-    public void close() {
-        if (!closed) {
-            closed = true;
-            // 关闭HTTP客户端
-            httpClient.dispatcher().executorService().shutdown();
-            httpClient.connectionPool().evictAll();
-
+        for (int i = 0; i < prompts.length; i++) {
+            results[i] = analyze(prompts[i]);
+            // 添加延迟避免API限制
             try {
-                if (!httpClient.dispatcher().executorService().awaitTermination(5, TimeUnit.SECONDS)) {
-                    log.warn("HTTP客户端未能正常关闭");
-                }
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.warn("关闭HTTP客户端时被中断", e);
+                throw new AnalysisException("批量分析被中断", e);
             }
+        }
+
+        return results;
+    }
+
+    @Override
+    public String getProviderName() {
+        return "DeepSeek";
+    }
+
+    @Override
+    public boolean isAvailable() {
+        try {
+            // 发送一个简单的测试请求
+            String testPrompt = "Hello";
+            analyze(testPrompt);
+            return true;
+        } catch (Exception e) {
+            log.warn("AI服务不可用: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 构建请求体
+     */
+    private String buildRequestBody(String prompt) {
+        JSONObject request = new JSONObject();
+        request.put("model", model);
+        request.put("messages", JSON.toJSON(buildMessages(prompt)));
+        request.put("max_tokens", maxTokens);
+        request.put("temperature", temperature);
+        request.put("stream", false);
+
+        return request.toJSONString();
+    }
+
+    /**
+     * 构建消息列表
+     */
+    private Object[] buildMessages(String prompt) {
+        return new Object[] {
+            JSON.toJSON(new JSONObject()
+                .fluentPut("role", "user")
+                .fluentPut("content", prompt))
+        };
+    }
+
+    /**
+     * 调用API
+     */
+    private String makeApiCall(String requestBody) throws IOException {
+        Request request = new Request.Builder()
+                .url(baseUrl + "/chat/completions")
+                .addHeader("Authorization", "Bearer " + apiKey)
+                .addHeader("Content-Type", "application/json")
+                .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("API调用失败: " + response.code() + " " + response.message());
+            }
+
+            ResponseBody body = response.body();
+            return body != null ? body.string() : "";
+        }
+    }
+
+    /**
+     * 解析响应
+     */
+    private String parseResponse(String response) throws AnalysisException {
+        try {
+            JSONObject jsonResponse = JSON.parseObject(response);
+
+            // 检查错误
+            if (jsonResponse.containsKey("error")) {
+                JSONObject error = jsonResponse.getJSONObject("error");
+                throw new AnalysisException("AI服务返回错误: " + error.getString("message"));
+            }
+
+            // 提取内容
+            if (jsonResponse.containsKey("choices")) {
+                var choices = jsonResponse.getJSONArray("choices");
+                if (!choices.isEmpty()) {
+                    JSONObject choice = choices.getJSONObject(0);
+                    JSONObject message = choice.getJSONObject("message");
+                    return message.getString("content");
+                }
+            }
+
+            throw new AnalysisException("AI服务返回格式错误");
+
+        } catch (Exception e) {
+            log.error("解析AI响应失败: {}", response, e);
+            throw new AnalysisException("解析AI响应失败: " + e.getMessage(), e);
         }
     }
 }

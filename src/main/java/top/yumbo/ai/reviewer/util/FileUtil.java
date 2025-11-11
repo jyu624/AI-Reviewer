@@ -1,75 +1,76 @@
 package top.yumbo.ai.reviewer.util;
 
-import top.yumbo.ai.reviewer.entity.SourceFile;
-
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * 文件工具类
- * 
- * 提供文件相关的实用方法
  */
 public class FileUtil {
 
     /**
-     * 获取文件类型
-     * 
-     * @param path 文件路径
-     * @return 文件类型
+     * 检查文件/目录是否存在
      */
-    public static SourceFile.FileType getFileType(Path path) {
-        String fileName = path.getFileName().toString().toLowerCase();
-
-        if (fileName.endsWith(".java")) {
-            return SourceFile.FileType.JAVA;
-        } else if (fileName.endsWith(".py")) {
-            return SourceFile.FileType.PYTHON;
-        } else if (fileName.endsWith(".js")) {
-            return SourceFile.FileType.JAVASCRIPT;
-        } else if (fileName.endsWith(".ts")) {
-            return SourceFile.FileType.TYPESCRIPT;
-        } else if (fileName.endsWith(".go")) {
-            return SourceFile.FileType.GO;
-        } else if (fileName.endsWith(".cpp") || fileName.endsWith(".cxx") || fileName.endsWith(".cc")) {
-            return SourceFile.FileType.CPP;
-        } else if (fileName.endsWith(".c")) {
-            return SourceFile.FileType.C;
-        } else if (fileName.endsWith(".h") || fileName.endsWith(".hpp")) {
-            return SourceFile.FileType.H;
-        } else {
-            return SourceFile.FileType.OTHER;
-        }
+    public static boolean exists(Path path) {
+        return Files.exists(path);
     }
 
     /**
-     * 检查文件名是否匹配模式
-     * 
-     * @param fileName 文件名
-     * @param pattern 模式（支持通配符）
-     * @return 如果匹配返回true，否则返回false
+     * 读取文件内容
      */
-    public static boolean matchesPattern(String fileName, String pattern) {
-        // 简单实现，支持*通配符
-        String regex = pattern.replace("*", ".*").replace("?", ".");
-        return fileName.matches(regex);
+    public static String readContent(Path path) throws IOException {
+        return Files.readString(path);
+    }
+
+    /**
+     * 写入文件内容
+     */
+    public static void writeContent(Path path, String content) throws IOException {
+        Files.writeString(path, content);
+    }
+
+    /**
+     * 获取文件大小（字节）
+     */
+    public static long getSize(Path path) throws IOException {
+        return Files.size(path);
+    }
+
+    /**
+     * 判断是否为目录
+     */
+    public static boolean isDirectory(Path path) {
+        return Files.isDirectory(path);
+    }
+
+    /**
+     * 判断是否为常规文件
+     */
+    public static boolean isRegularFile(Path path) {
+        return Files.isRegularFile(path);
     }
 
     /**
      * 获取相对路径
-     * 
-     * @param basePath 基础路径
-     * @param fullPath 完整路径
-     * @return 相对路径
      */
-    public static String getRelativePath(String basePath, String fullPath) {
-        Path base = Paths.get(basePath).normalize();
-        Path full = Paths.get(fullPath).normalize();
+    public static String getRelativePath(Path base, Path target) {
+        return base.relativize(target).toString();
+    }
 
-        if (full.startsWith(base)) {
-            return base.relativize(full).toString();
-        } else {
-            return fullPath;
-        }
+    /**
+     * 获取文件扩展名
+     */
+    public static String getExtension(Path path) {
+        String fileName = path.getFileName().toString();
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1) : "";
+    }
+
+    /**
+     * 创建目录（如果不存在）
+     */
+    public static void createDirectories(Path path) throws IOException {
+        Files.createDirectories(path);
     }
 }

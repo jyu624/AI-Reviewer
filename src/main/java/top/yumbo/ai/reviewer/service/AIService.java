@@ -1,32 +1,33 @@
 package top.yumbo.ai.reviewer.service;
 
+import top.yumbo.ai.reviewer.exception.AnalysisException;
+
 /**
  * AI服务接口
- * 
- * 定义了与AI服务交互的基本方法
  */
-public interface AIService extends AutoCloseable {
+public interface AIService {
 
     /**
-     * 分析内容
-     * 
-     * @param prompt 提示内容
-     * @param maxTokens 最大token数
-     * @return AI响应
+     * 分析代码/文本
+     * @param prompt 分析提示词
+     * @return 分析结果
      */
-    String analyze(String prompt, int maxTokens);
+    String analyze(String prompt) throws AnalysisException;
 
     /**
-     * 获取最大token数
-     * 
-     * @return 最大token数
+     * 批量分析
+     * @param prompts 提示词列表
+     * @return 分析结果列表
      */
-    int getMaxTokens();
+    String[] analyzeBatch(String[] prompts) throws AnalysisException;
 
     /**
-     * 获取模型名称
-     * 
-     * @return 模型名称
+     * 获取服务提供商名称
      */
-    String getModelName();
+    String getProviderName();
+
+    /**
+     * 检查服务是否可用
+     */
+    boolean isAvailable();
 }

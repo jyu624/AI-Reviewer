@@ -2,73 +2,55 @@ package top.yumbo.ai.reviewer.exception;
 
 /**
  * 分析异常类
- * 
- * 用于封装分析过程中发生的异常
  */
-public class AnalysisException extends RuntimeException {
+public class AnalysisException extends Exception {
+
+    private final ErrorType errorType;
+
+    public AnalysisException(String message) {
+        super(message);
+        this.errorType = ErrorType.GENERAL;
+    }
+
+    public AnalysisException(String message, Throwable cause) {
+        super(message, cause);
+        this.errorType = ErrorType.GENERAL;
+    }
+
+    public AnalysisException(ErrorType errorType, String message) {
+        super(message);
+        this.errorType = errorType;
+    }
+
+    public AnalysisException(ErrorType errorType, String message, Throwable cause) {
+        super(message, cause);
+        this.errorType = errorType;
+    }
+
+    public ErrorType getErrorType() {
+        return errorType;
+    }
 
     /**
      * 错误类型枚举
      */
     public enum ErrorType {
-        FILE_SCAN_ERROR,      // 文件扫描错误
-        FILE_PROCESS_ERROR,    // 文件处理错误
-        AI_SERVICE_ERROR,      // AI服务错误
-        REPORT_GENERATION_ERROR, // 报告生成错误
-        CONFIGURATION_ERROR,   // 配置错误
-        IO_ERROR,              // IO错误
-        UNKNOWN_ERROR          // 未知错误
-    }
+        GENERAL("通用错误"),
+        FILE_NOT_FOUND("文件未找到"),
+        CONFIG_ERROR("配置错误"),
+        AI_SERVICE_ERROR("AI服务错误"),
+        PARSING_ERROR("解析错误"),
+        NETWORK_ERROR("网络错误"),
+        PERMISSION_ERROR("权限错误");
 
-    private final ErrorType errorType;
+        private final String description;
 
-    /**
-     * 构造函数
-     * 
-     * @param message 错误消息
-     */
-    public AnalysisException(String message) {
-        this(message, ErrorType.UNKNOWN_ERROR, null);
-    }
+        ErrorType(String description) {
+            this.description = description;
+        }
 
-    /**
-     * 构造函数
-     * 
-     * @param message 错误消息
-     * @param cause 原因
-     */
-    public AnalysisException(String message, Throwable cause) {
-        this(message, ErrorType.UNKNOWN_ERROR, cause);
-    }
-
-    /**
-     * 构造函数
-     * 
-     * @param message 错误消息
-     * @param errorType 错误类型
-     */
-    public AnalysisException(String message, ErrorType errorType) {
-        this(message, errorType, null);
-    }
-
-    /**
-     * 构造函数
-     * 
-     * @param message 错误消息
-     * @param errorType 错误类型
-     * @param cause 原因
-     */
-    public AnalysisException(String message, ErrorType errorType, Throwable cause) {
-        super(message, cause);
-        this.errorType = errorType;
-    }
-
-    /**
-     * 获取错误类型
-     * 
-     * @return 错误类型
-     */
-    public ErrorType getErrorType() {
-        return errorType;
+        public String getDescription() {
+            return description;
+        }
     }
 }

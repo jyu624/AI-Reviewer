@@ -1,0 +1,101 @@
+# AI Reviewer 配置文件
+
+# AI服务配置
+aiService:
+  provider: "deepseek"  # deepseek, openai, etc.
+  apiKey: "sk-1c780a5ae9c94d63861d90d5d1930481"  # 环境变量或直接配置
+  baseUrl: "https://api.deepseek.com/v1"
+  model: "deepseek-chat"
+  maxTokens: 4000
+  temperature: 0.3
+  additionalParams:
+    stream: false
+
+# 文件扫描配置
+fileScan:
+  includePatterns:
+    - "*.java"
+    - "*.py"
+    - "*.js"
+    - "*.ts"
+    - "*.go"
+    - "*.rs"
+    - "*.cpp"
+    - "*.c"
+    - "*.h"
+    - "*.yaml"
+    - "*.yml"
+    - "*.json"
+    - "*.xml"
+    - "*.properties"
+    - "*.md"
+    - "Dockerfile"
+    - "docker-compose.yml"
+    - "Makefile"
+    - "pom.xml"
+    - "build.gradle"
+    - "package.json"
+    - "requirements.txt"
+    - "go.mod"
+    - "Cargo.toml"
+  excludePatterns:
+    - "*.log"
+    - "*.tmp"
+    - "*.swp"
+    - "*.bak"
+    - "*.class"
+    - "*.jar"
+    - "*.war"
+    - "*.ear"
+    - "*.zip"
+    - "*.tar.gz"
+    - "*.rar"
+    - "*~"
+  coreFilePatterns:
+    - "*main*"
+    - "*app*"
+    - "*application*"
+    - "*config*"
+    - "*controller*"
+    - "*service*"
+    - "*dao*"
+    - "*repository*"
+    - "*model*"
+    - "*entity*"
+    - "*util*"
+    - "*helper*"
+    - "*README*"
+    - "*CHANGELOG*"
+    - "*ARCHITECTURE*"
+    - "*pom.xml"
+    - "*build.gradle"
+    - "*package.json"
+    - "*requirements.txt"
+    - "*go.mod"
+    - "*Cargo.toml"
+  maxFileSize: 1024  # KB
+  maxFilesCount: 200
+  includeTests: false
+  includeDependencies: false
+
+# 分析配置
+analysis:
+  analysisDimensions:
+    - "architecture"
+    - "code_quality"
+    - "technical_debt"
+    - "functionality"
+  batchSize: 10  # 每批处理的文件数
+  maxContextLength: 32000  # 最大上下文长度（字符）
+  enableIncrementalAnalysis: true
+  domainKnowledge:
+    # 可以添加特定领域的知识
+    java:
+      frameworks: ["Spring Boot", "Spring MVC", "Hibernate", "MyBatis"]
+      patterns: ["MVC", "DAO", "Service", "Controller", "Repository"]
+    python:
+      frameworks: ["Django", "Flask", "FastAPI", "SQLAlchemy"]
+      patterns: ["MVC", "ORM", "Blueprint"]
+    javascript:
+      frameworks: ["React", "Vue.js", "Angular", "Express.js", "Node.js"]
+      patterns: ["MVC", "MVVM", "Component", "Service"]

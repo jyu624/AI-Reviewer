@@ -1,365 +1,291 @@
 package top.yumbo.ai.reviewer.analyzer;
 
 import lombok.extern.slf4j.Slf4j;
-import top.yumbo.ai.reviewer.config.Config;
 import top.yumbo.ai.reviewer.entity.FileChunk;
-import top.yumbo.ai.reviewer.entity.SourceFile;
-import top.yumbo.ai.reviewer.exception.AnalysisException;
-import top.yumbo.ai.reviewer.util.FileUtil;
+import top.yumbo.ai.reviewer.util.TokenEstimator;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 代码分块器
- * 
- * 负责将源文件智能分块，以便AI分析
+ * 代码块分割器 - 将大文件分割成适合AI分析的小块
  */
 @Slf4j
 public class ChunkSplitter {
 
-    private final Config config;
+    private final TokenEstimator tokenEstimator;
+    private static final int MAX_CHUNK_SIZE = 4000; // 最大token数
+    private static final int OVERLAP_SIZE = 200; // 重叠token数
 
-    public ChunkSplitter(Config config) {
-        this.config = config;
+    // 代码块识别正则表达式
+    private static final Pattern CLASS_PATTERN = Pattern.compile(
+            "(?:public|private|protected)?\\s*(?:class|interface|enum)\\s+(\\w+)");
+    private static final Pattern METHOD_PATTERN = Pattern.compile(
+            "(?:public|private|protected)?\\s*(?:static)?\\s*[\\w\\<\\>\\[\\]]+\\s+(\\w+)\\s*\\(");
+    private static final Pattern FUNCTION_PATTERN = Pattern.compile(
+            "(?:function|def|fun)\\s+(\\w+)\\s*\\(");
+
+    public ChunkSplitter() {
+        this.tokenEstimator = new TokenEstimator();
     }
 
     /**
-     * 将源文件分块
-     * 
-     * @param sourceFiles 源文件列表
+     * 分割多个文件
+     * @param files 文件路径列表
+     * @param maxChunks 最大块数限制
      * @return 文件块列表
-     * @throws AnalysisException 如果分块过程中发生错误
      */
-    public List<FileChunk> split(List<SourceFile> sourceFiles) throws AnalysisException {
-        List<FileChunk> chunks = new ArrayList<>();
+    public List<FileChunk> splitFiles(List<Path> files, int maxChunks) {
+        List<FileChunk> allChunks = new ArrayList<>();
 
-        for (SourceFile sourceFile : sourceFiles) {
-            if (sourceFile.getTokenCount() <= config.getChunkSize()) {
-                // 小文件直接作为一个块
-                chunks.add(createChunk(sourceFile, sourceFile.getContent(), 0));
-            } else {
-                // 大文件需要拆分
-                chunks.addAll(splitLargeFile(sourceFile));
+        for (Path file : files) {
+            try {
+                List<FileChunk> fileChunks = splitFile(file);
+                allChunks.addAll(fileChunks);
+
+                if (allChunks.size() >= maxChunks) {
+                    log.warn("达到最大块数限制: {}", maxChunks);
+                    break;
+                }
+            } catch (Exception e) {
+                log.error("分割文件失败: {}", file, e);
             }
         }
 
-        log.info("文件分块完成，共生成 {} 个块", chunks.size());
+        return allChunks.stream()
+                .limit(maxChunks)
+                .collect(ArrayList::new, (list, chunk) -> list.add(chunk), List::addAll);
+    }
+
+    /**
+     * 分割单个文件
+     * @param filePath 文件路径
+     * @return 文件块列表
+     */
+    public List<FileChunk> splitFile(Path filePath) throws Exception {
+        String content = java.nio.file.Files.readString(filePath);
+        String fileName = filePath.getFileName().toString();
+
+        // 估算总token数
+        int totalTokens = tokenEstimator.estimateTokens(content);
+
+        if (totalTokens <= MAX_CHUNK_SIZE) {
+            // 文件不大，直接作为一个块
+            return List.of(FileChunk.builder()
+                    .filePath(filePath.toString())
+                    .content(content)
+                    .startLine(1)
+                    .endLine(content.split("\n").length)
+                    .chunkIndex(0)
+                    .totalChunks(1)
+                    .estimatedTokens(totalTokens)
+                    .build());
+        }
+
+        // 文件较大，需要分割
+        return splitLargeFile(filePath, content);
+    }
+
+    /**
+     * 分割大文件
+     */
+    private List<FileChunk> splitLargeFile(Path filePath, String content) {
+        List<FileChunk> chunks = new ArrayList<>();
+        String[] lines = content.split("\n");
+        int totalLines = lines.length;
+
+        // 识别代码结构
+        List<CodeBlock> codeBlocks = identifyCodeBlocks(content);
+
+        if (codeBlocks.isEmpty()) {
+            // 没有识别到结构化代码，按行分割
+            return splitByLines(filePath, lines);
+        }
+
+        // 按代码块分割
+        int currentLine = 0;
+        int chunkIndex = 0;
+
+        for (CodeBlock block : codeBlocks) {
+            if (currentLine < block.startLine) {
+                // 处理块之间的内容
+                List<FileChunk> gapChunks = splitContent(filePath, lines, currentLine, block.startLine - 1, chunkIndex);
+                chunks.addAll(gapChunks);
+                chunkIndex += gapChunks.size();
+            }
+
+            // 处理代码块
+            List<FileChunk> blockChunks = splitContent(filePath, lines, block.startLine, block.endLine, chunkIndex);
+            for (FileChunk chunk : blockChunks) {
+                chunk.setChunkType(block.type);
+                chunk.setIdentifier(block.identifier);
+            }
+            chunks.addAll(blockChunks);
+            chunkIndex += blockChunks.size();
+
+            currentLine = block.endLine + 1;
+        }
+
+        // 处理剩余内容
+        if (currentLine < totalLines) {
+            List<FileChunk> remainingChunks = splitContent(filePath, lines, currentLine, totalLines - 1, chunkIndex);
+            chunks.addAll(remainingChunks);
+        }
+
+        // 设置总数
+        final int totalChunks = chunks.size();
+        chunks.forEach(chunk -> chunk.setTotalChunks(totalChunks));
+
         return chunks;
     }
 
     /**
-     * 拆分大文件
-     * 
-     * @param sourceFile 源文件
-     * @return 文件块列表
+     * 按行分割内容
      */
-    private List<FileChunk> splitLargeFile(SourceFile sourceFile) {
+    private List<FileChunk> splitByLines(Path filePath, String[] lines) {
         List<FileChunk> chunks = new ArrayList<>();
+        int totalLines = lines.length;
+        int chunkSize = Math.max(50, totalLines / 10); // 每块大约50-100行
 
-        // 根据文件类型选择不同的拆分策略
-        switch (sourceFile.getFileType()) {
-            case JAVA:
-                chunks.addAll(splitJavaFile(sourceFile));
-                break;
-            case PYTHON:
-                chunks.addAll(splitPythonFile(sourceFile));
-                break;
-            case JAVASCRIPT:
-            case TYPESCRIPT:
-                chunks.addAll(splitJavaScriptFile(sourceFile));
-                break;
-            default:
-                // 默认按行拆分
-                chunks.addAll(splitByLines(sourceFile));
-                break;
+        for (int i = 0; i < totalLines; i += chunkSize) {
+            int endLine = Math.min(i + chunkSize - 1, totalLines - 1);
+            String chunkContent = String.join("\n", java.util.Arrays.copyOfRange(lines, i, endLine + 1));
+
+            chunks.add(FileChunk.builder()
+                    .filePath(filePath.toString())
+                    .content(chunkContent)
+                    .startLine(i + 1)
+                    .endLine(endLine + 1)
+                    .chunkIndex(chunks.size())
+                    .estimatedTokens(tokenEstimator.estimateTokens(chunkContent))
+                    .build());
+        }
+
+        chunks.forEach(chunk -> chunk.setTotalChunks(chunks.size()));
+        return chunks;
+    }
+
+    /**
+     * 分割内容块
+     */
+    private List<FileChunk> splitContent(Path filePath, String[] lines, int startLine, int endLine, int startIndex) {
+        List<FileChunk> chunks = new ArrayList<>();
+        String content = String.join("\n", java.util.Arrays.copyOfRange(lines, startLine, endLine + 1));
+        int tokens = tokenEstimator.estimateTokens(content);
+
+        if (tokens <= MAX_CHUNK_SIZE) {
+            chunks.add(FileChunk.builder()
+                    .filePath(filePath.toString())
+                    .content(content)
+                    .startLine(startLine + 1)
+                    .endLine(endLine + 1)
+                    .chunkIndex(startIndex)
+                    .estimatedTokens(tokens)
+                    .build());
+        } else {
+            // 需要进一步分割
+            int midLine = startLine + (endLine - startLine) / 2;
+            List<FileChunk> firstHalf = splitContent(filePath, lines, startLine, midLine, startIndex);
+            List<FileChunk> secondHalf = splitContent(filePath, lines, midLine + 1, endLine, startIndex + firstHalf.size());
+            chunks.addAll(firstHalf);
+            chunks.addAll(secondHalf);
         }
 
         return chunks;
     }
 
     /**
-     * 拆分Java文件
-     * 
-     * @param sourceFile 源文件
-     * @return 文件块列表
+     * 识别代码块
      */
-    private List<FileChunk> splitJavaFile(SourceFile sourceFile) {
-        List<FileChunk> chunks = new ArrayList<>();
+    private List<CodeBlock> identifyCodeBlocks(String content) {
+        List<CodeBlock> blocks = new ArrayList<>();
+        String[] lines = content.split("\n");
 
-        // Java文件按类/方法拆分
-        String content = sourceFile.getContent();
-
-        // 匹配类定义（启用 DOTALL风格以允许跨行匹配）
-        Pattern classPattern = Pattern.compile("(?s)(\\s*(?:public|private|protected)?\\s*(?:abstract|final)?\\s*class\\s+\\w+[^\\{]*\\{)");
-        Matcher classMatcher = classPattern.matcher(content);
-
-        int lastEnd = 0;
-        int chunkIndex = 0;
-
+        // 识别类
+        Matcher classMatcher = CLASS_PATTERN.matcher(content);
         while (classMatcher.find()) {
-            // 添加类定义之前的内容
-            if (classMatcher.start() > lastEnd) {
-                String beforeClass = content.substring(lastEnd, classMatcher.start());
-                if (!beforeClass.trim().isEmpty()) {
-                    chunks.add(createChunk(sourceFile, beforeClass, chunkIndex++));
-                }
-            }
+            int lineNumber = getLineNumber(content, classMatcher.start());
+            blocks.add(new CodeBlock("class", classMatcher.group(1), lineNumber, findBlockEnd(lines, lineNumber)));
+        }
 
-            // 找到类的结束位置
-            int classStart = classMatcher.start();
-            int classEnd = findMatchingBrace(content, classMatcher.start());
-
-            if (classEnd > classStart) {
-                String classContent = content.substring(classStart, classEnd);
-
-                // 如果类内容仍然太大，按方法拆分
-                if (estimateTokens(classContent) > config.getChunkSize()) {
-                    chunks.addAll(splitJavaClassByMethods(sourceFile, classContent, chunkIndex));
-                    // update chunkIndex by number of added chunks
-                    chunkIndex += Math.max(1, estimateTokens(classContent) / Math.max(1, config.getChunkSize()));
-                } else {
-                    chunks.add(createChunk(sourceFile, classContent, chunkIndex++));
-                }
-
-                lastEnd = classEnd;
+        // 识别方法/函数
+        Pattern methodPattern = getMethodPattern(content);
+        if (methodPattern != null) {
+            Matcher methodMatcher = methodPattern.matcher(content);
+            while (methodMatcher.find()) {
+                int lineNumber = getLineNumber(content, methodMatcher.start());
+                blocks.add(new CodeBlock("method", methodMatcher.group(1), lineNumber, findBlockEnd(lines, lineNumber)));
             }
         }
 
-        // 添加剩余内容
-        if (lastEnd < content.length()) {
-            String remaining = content.substring(lastEnd);
-            if (!remaining.trim().isEmpty()) {
-                chunks.add(createChunk(sourceFile, remaining, chunkIndex));
-            }
-        }
+        // 按行号排序
+        blocks.sort((a, b) -> Integer.compare(a.startLine, b.startLine));
 
-        return chunks;
+        return blocks;
     }
 
     /**
-     * 按方法拆分Java类
-     * 
-     * @param sourceFile 源文件
-     * @param classContent 类内容
-     * @param startChunkIndex 起始块索引
-     * @return 文件块列表
+     * 获取方法模式
      */
-    private List<FileChunk> splitJavaClassByMethods(SourceFile sourceFile, String classContent, int startChunkIndex) {
-        List<FileChunk> chunks = new ArrayList<>();
-
-        // 匹配方法定义（启用 DOTALL）
-        Pattern methodPattern = Pattern.compile("(?s)(\\s*(?:public|private|protected)?\\s*(?:static)?\\s*(?:final)?\\s*(?:abstract)?\\s*\\w+\\s+\\w+\\s*\\([^)]*\\)\\s*(?:throws\\s+[^\\{]+)?\\s*\\{)");
-        Matcher methodMatcher = methodPattern.matcher(classContent);
-
-        int lastEnd = 0;
-        int chunkIndex = startChunkIndex;
-
-        while (methodMatcher.find()) {
-            // 添加方法定义之前的内容
-            if (methodMatcher.start() > lastEnd) {
-                String beforeMethod = classContent.substring(lastEnd, methodMatcher.start());
-                if (!beforeMethod.trim().isEmpty()) {
-                    chunks.add(createChunk(sourceFile, beforeMethod, chunkIndex++));
-                }
-            }
-
-            // 找到方法的结束位置
-            int methodStart = methodMatcher.start();
-            int methodEnd = findMatchingBrace(classContent, methodMatcher.start());
-
-            if (methodEnd > methodStart) {
-                String methodContent = classContent.substring(methodStart, methodEnd);
-                chunks.add(createChunk(sourceFile, methodContent, chunkIndex++));
-                lastEnd = methodEnd;
-            }
+    private Pattern getMethodPattern(String content) {
+        if (content.contains("public static void main") || content.contains("function ") || content.contains("def ")) {
+            return METHOD_PATTERN; // Java/C# style
+        } else if (content.contains("def ")) {
+            return FUNCTION_PATTERN; // Python style
         }
-
-        // 添加剩余内容
-        if (lastEnd < classContent.length()) {
-            String remaining = classContent.substring(lastEnd);
-            if (!remaining.trim().isEmpty()) {
-                chunks.add(createChunk(sourceFile, remaining, chunkIndex));
-            }
-        }
-
-        return chunks;
+        return null;
     }
 
     /**
-     * 拆分Python文件
-     * 
-     * @param sourceFile 源文件
-     * @return 文件块列表
+     * 获取行号
      */
-    private List<FileChunk> splitPythonFile(SourceFile sourceFile) {
-        List<FileChunk> chunks = new ArrayList<>();
-
-        // Python文件按函数/类拆分
-        String content = sourceFile.getContent();
-        String[] lines = content.split("\\R");
-
-        StringBuilder currentChunk = new StringBuilder();
-        int currentTokens = 0;
-        int chunkIndex = 0;
-
-        for (String line : lines) {
-            // 检查是否是函数或类定义
-            if (line.trim().matches("^(def |class )")) {
-                // 如果当前块不为空，保存它
-                if (currentChunk.length() > 0) {
-                    chunks.add(createChunk(sourceFile, currentChunk.toString(), chunkIndex++));
-                    currentChunk = new StringBuilder();
-                    currentTokens = 0;
-                }
-            }
-
-            // 添加当前行到块中
-            currentChunk.append(line).append(System.lineSeparator());
-            currentTokens += estimateTokens(line);
-
-            // 如果块大小超过限制，保存它
-            if (currentTokens >= config.getChunkSize()) {
-                chunks.add(createChunk(sourceFile, currentChunk.toString(), chunkIndex++));
-                currentChunk = new StringBuilder();
-                currentTokens = 0;
-            }
-        }
-
-        // 添加最后一块
-        if (currentChunk.length() > 0) {
-            chunks.add(createChunk(sourceFile, currentChunk.toString(), chunkIndex));
-        }
-
-        return chunks;
+    private int getLineNumber(String content, int charIndex) {
+        return content.substring(0, charIndex).split("\n").length;
     }
 
     /**
-     * 拆分JavaScript/TypeScript文件
-     * 
-     * @param sourceFile 源文件
-     * @return 文件块列表
+     * 查找块结束行
      */
-    private List<FileChunk> splitJavaScriptFile(SourceFile sourceFile) {
-        // JavaScript/TypeScript文件按函数/类拆分，与Python类似
-        return splitPythonFile(sourceFile);
-    }
-
-    /**
-     * 按行拆分文件
-     * 
-     * @param sourceFile 源文件
-     * @return 文件块列表
-     */
-    private List<FileChunk> splitByLines(SourceFile sourceFile) {
-        List<FileChunk> chunks = new ArrayList<>();
-
-        String content = sourceFile.getContent();
-        String[] lines = content.split("\\R");
-
-        StringBuilder currentChunk = new StringBuilder();
-        int currentTokens = 0;
-        int chunkIndex = 0;
-
-        for (String line : lines) {
-            currentChunk.append(line).append(System.lineSeparator());
-            currentTokens += estimateTokens(line);
-
-            // 如果块大小超过限制，保存它
-            if (currentTokens >= config.getChunkSize()) {
-                chunks.add(createChunk(sourceFile, currentChunk.toString(), chunkIndex++));
-                currentChunk = new StringBuilder();
-                currentTokens = 0;
-            }
-        }
-
-        // 添加最后一块
-        if (currentChunk.length() > 0) {
-            chunks.add(createChunk(sourceFile, currentChunk.toString(), chunkIndex));
-        }
-
-        return chunks;
-    }
-
-    /**
-     * 创建文件块
-     * 
-     * @param sourceFile 源文件
-     * @param content 块内容
-     * @param index 块索引
-     * @return 文件块
-     */
-    private FileChunk createChunk(SourceFile sourceFile, String content, int index) {
-        return FileChunk.builder()
-                .sourceFile(sourceFile)
-                .content(content)
-                .index(index)
-                .tokenCount(estimateTokens(content))
-                .build();
-    }
-
-    /**
-     * 查找匹配的大括号
-     * 
-     * @param content 内容
-     * @param start 起始位置
-     * @return 匹配的大括号位置
-     */
-    private int findMatchingBrace(String content, int start) {
+    private int findBlockEnd(String[] lines, int startLine) {
         int braceCount = 0;
-        boolean inString = false;
-        boolean inChar = false;
-        boolean escape = false;
+        boolean inBlock = false;
 
-        for (int i = start; i < content.length(); i++) {
-            char c = content.charAt(i);
+        for (int i = startLine; i < lines.length; i++) {
+            String line = lines[i].trim();
 
-            if (escape) {
-                escape = false;
-                continue;
+            if (line.contains("{")) {
+                braceCount++;
+                inBlock = true;
+            }
+            if (line.contains("}")) {
+                braceCount--;
             }
 
-            if (c == '\\') {
-                escape = true;
-                continue;
-            }
-
-            if (c == '"' && !inChar) {
-                inString = !inString;
-                continue;
-            }
-
-            if (c == '\'' && !inString) {
-                inChar = !inChar;
-                continue;
-            }
-
-            if (!inString && !inChar) {
-                if (c == '{') {
-                    braceCount++;
-                } else if (c == '}') {
-                    braceCount--;
-                    if (braceCount == 0) {
-                        return i + 1; // 包含结束大括号
-                    }
-                }
+            if (inBlock && braceCount == 0) {
+                return i;
             }
         }
 
-        // 如果没有找到匹配的大括号，返回内容末尾
-        return content.length();
+        return Math.min(startLine + 50, lines.length - 1); // 默认50行或文件结尾
     }
 
     /**
-     * 估算内容的token数量
-     * 
-     * @param content 内容
-     * @return 估算的token数量
+     * 代码块内部类
      */
-    private int estimateTokens(String content) {
-        // 简单估算：1个token约等于4个字符
-        return content.length() / 4;
+    private static class CodeBlock {
+        String type;
+        String identifier;
+        int startLine;
+        int endLine;
+
+        CodeBlock(String type, String identifier, int startLine, int endLine) {
+            this.type = type;
+            this.identifier = identifier;
+            this.startLine = startLine;
+            this.endLine = endLine;
+        }
     }
 }
