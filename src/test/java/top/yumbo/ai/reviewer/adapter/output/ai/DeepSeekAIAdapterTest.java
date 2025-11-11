@@ -1,10 +1,6 @@
 package top.yumbo.ai.reviewer.adapter.output.ai;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -12,32 +8,146 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * DeepSeekAIAdapter测试
- * 注意：这些测试不调用真实的API，使用模拟配置
+ *
+ * 测试分为两类：
+ * 1. 单元测试 - 不需要真实 API，测试基本功能
+ * 2. 集成测试 - 需要真实 API Key（从环境变量 DEEPSEEK_API_KEY 读取）
+ *
+ * API Key 验证：
+ * - 在测试开始前会验证 API Key 是否有效
+ * - 如果 API Key 无效，所有需要 API 的测试将被跳过
+ *
+ * 运行集成测试：
+ * 1. 设置环境变量：set DEEPSEEK_API_KEY=your-api-key
+ * 2. 运行测试：mvn test -Dtest=DeepSeekAIAdapterTest
  */
 @DisplayName("DeepSeekAIAdapter测试")
 class DeepSeekAIAdapterTest {
 
     private DeepSeekAIAdapter adapter;
     private DeepSeekAIAdapter.AIServiceConfig testConfig;
+    private static final String API_KEY_ENV = "DEEPSEEK_API_KEY";
+    private static boolean hasRealApiKey = false;
+    private static boolean apiKeyValidated = false;
+    private static boolean apiKeyValid = false;
+
+    @BeforeAll
+    static void validateApiKey() {
+        System.out.println("\n========================================");
+        System.out.println("DeepSeek API Key 验证");
+        System.out.println("========================================");
+
+        String apiKey = System.getenv(API_KEY_ENV);
+
+        if (apiKey != null && !apiKey.trim().isEmpty() && !apiKey.startsWith("test-")) {
+            hasRealApiKey = true;
+            System.out.println("✓ 检测到环境变量 DEEPSEEK_API_KEY");
+            System.out.println("✓ API Key 格式: " + maskApiKey(apiKey));
+
+            // 验证 API Key 格式
+            if (apiKey.startsWith("sk-") && apiKey.length() > 20) {
+                System.out.println("✅ API Key 格式有效");
+
+                // 创建临时适配器进行连接测试
+                System.out.println("⏳ 正在验证 API 连接...");
+                try {
+                    DeepSeekAIAdapter.AIServiceConfig validationConfig =
+                        new DeepSeekAIAdapter.AIServiceConfig(
+                            apiKey,
+                            "https://api.deepseek.com/v1",
+                            "deepseek-chat",
+                            100, // 最小 token 用于测试
+                            0.7,
+                            1,
+                            1, // 只重试1次
+                            500,
+                            10000, // 10秒连接超时
+                            15000  // 15秒读取超时
+                        );
+
+                    DeepSeekAIAdapter testAdapter = new DeepSeekAIAdapter(validationConfig);
+
+                    // 测试 API 可用性
+                    boolean available = testAdapter.isAvailable();
+                    testAdapter.shutdown();
+
+                    if (available) {
+                        apiKeyValid = true;
+                        System.out.println("✅ API 连接验证成功 - 将运行完整测试套件");
+                    } else {
+                        apiKeyValid = false;
+                        System.out.println("❌ API 连接验证失败 - API 不可用");
+                        System.out.println("   原因可能是：网络问题、API Key 无效、配额用尽等");
+                        System.out.println("   将跳过所有需要真实 API 的测试");
+                    }
+                } catch (Exception e) {
+                    apiKeyValid = false;
+                    System.out.println("❌ API 连接验证失败: " + e.getMessage());
+                    System.out.println("   将跳过所有需要真实 API 的测试");
+                }
+            } else {
+                apiKeyValid = false;
+                System.out.println("❌ API Key 格式无效（应该以 'sk-' 开头且长度 > 20）");
+                System.out.println("   将跳过所有需要真实 API 的测试");
+            }
+        } else {
+            hasRealApiKey = false;
+            apiKeyValid = false;
+            System.out.println("⚠️  未配置 DEEPSEEK_API_KEY 环境变量");
+            System.out.println("   只运行单元测试，跳过集成测试");
+        }
+
+        apiKeyValidated = true;
+        System.out.println("========================================\n");
+    }
+
+    private static String maskApiKey(String apiKey) {
+        if (apiKey == null || apiKey.length() < 10) {
+            return "***";
+        }
+        return apiKey.substring(0, 7) + "..." + apiKey.substring(apiKey.length() - 4);
+    }
 
     @BeforeEach
     void setUp() {
-        // 创建测试配置（不使用真实API）
-        testConfig = new DeepSeekAIAdapter.AIServiceConfig(
-                "test-api-key",
-                "https://test.api.deepseek.com/v1",
-                "deepseek-chat",
-                2000,
-                0.3,
-                2, // maxConcurrency
-                3, // maxRetries
-                500, // retryDelayMillis
-                5000, // connectTimeoutMillis
-                10000 // readTimeoutMillis
-        );
+        // 确保 API Key 已验证
+        assumeTrue(apiKeyValidated, "API Key 验证尚未完成");
+
+        // 根据验证结果配置适配器
+        if (hasRealApiKey && apiKeyValid) {
+            // 使用真实的 API Key
+            String apiKey = System.getenv(API_KEY_ENV);
+            testConfig = new DeepSeekAIAdapter.AIServiceConfig(
+                    apiKey,
+                    "https://api.deepseek.com/v1",
+                    "deepseek-chat",
+                    2000,
+                    0.7,
+                    2,
+                    3,
+                    1000,
+                    30000,
+                    60000
+            );
+        } else {
+            // 使用测试配置（用于单元测试）
+            testConfig = new DeepSeekAIAdapter.AIServiceConfig(
+                    "test-api-key",
+                    "https://test.api.deepseek.com/v1",
+                    "deepseek-chat",
+                    2000,
+                    0.3,
+                    2,
+                    3,
+                    500,
+                    5000,
+                    10000
+            );
+        }
 
         adapter = new DeepSeekAIAdapter(testConfig);
     }
@@ -116,16 +226,42 @@ class DeepSeekAIAdapterTest {
     }
 
     @Nested
-    @DisplayName("analyze()方法测试（不调用真实API）")
+    @DisplayName("analyze()方法测试")
     class AnalyzeMethodTest {
 
         @Test
-        @DisplayName("应该能够接受非空提示词")
-        void shouldAcceptNonNullPrompt() {
+        @DisplayName("真实API测试 - 应该成功分析简单代码")
+        void shouldAnalyzeSimpleCodeWithRealAPI() {
+            // 只在 API Key 有效时运行
+            assumeTrue(apiKeyValid, "跳过：API Key 未配置或无效");
+
+            String prompt = "请分析以下代码并给出简短评价（20字以内）：\n" +
+                    "public class HelloWorld {\n" +
+                    "    public static void main(String[] args) {\n" +
+                    "        System.out.println(\"Hello World\");\n" +
+                    "    }\n" +
+                    "}";
+
+            try {
+                String result = adapter.analyze(prompt);
+
+                assertThat(result).isNotNull();
+                assertThat(result).isNotEmpty();
+                System.out.println("✅ AI 分析结果: " + result);
+            } catch (Exception e) {
+                System.err.println("❌ API 调用失败: " + e.getMessage());
+                throw e;
+            }
+        }
+
+        @Test
+        @DisplayName("无API Key时 - 应该失败")
+        void shouldFailWithoutRealAPI() {
+            // 只在 API Key 无效时运行
+            assumeTrue(!apiKeyValid, "跳过：已配置有效的 API Key");
+
             String prompt = "这是一个测试提示词";
 
-            // 注意：这个测试会尝试调用真实API，因此会失败
-            // 在实际测试中应该使用Mock或者跳过这个测试
             assertThatThrownBy(() -> adapter.analyze(prompt))
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContaining("AI分析失败");
@@ -283,8 +419,23 @@ class DeepSeekAIAdapterTest {
     class IsAvailableTest {
 
         @Test
+        @DisplayName("真实API - 应该返回true")
+        void shouldReturnTrueWithRealAPI() {
+            // 只在 API Key 有效时运行
+            assumeTrue(apiKeyValid, "跳过：API Key 未配置或无效");
+
+            boolean available = adapter.isAvailable();
+
+            System.out.println(available ? "✅ API 可用" : "❌ API 不可用");
+            assertThat(available).isTrue();
+        }
+
+        @Test
         @DisplayName("无效配置时应该返回false")
         void shouldReturnFalseForInvalidConfig() {
+            // 只在 API Key 无效时运行
+            assumeTrue(!apiKeyValid, "跳过：已配置有效的 API Key");
+
             boolean available = adapter.isAvailable();
 
             // 由于使用的是测试配置（无效API），应该返回false

@@ -193,7 +193,7 @@
                         <property>
                             <name>https.nonProxyHosts</name>
                             <!-- 按需添加你的内部域名、本地地址等，用|分隔 -->
-                            <value>localhost|127.0.0.1|*.local|*.internal|*.your-company.com|*.baidu.com|*.google.com|*</value>
+                            <value>localhost|127.0.0.1|*.anthropic.com|*.openai.*|*.googleapis.com|*.deepseek.*|*.aliyun.com|*.spring.*|*.baidu.com|*.google.com|*</value>
                         </property>
                     </systemProperties>
                     <useModulePath>false</useModulePath>
