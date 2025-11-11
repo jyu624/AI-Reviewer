@@ -132,6 +132,11 @@ public class TeamManagementService {
             throw new IllegalArgumentException("只有团队成员才能提交代码");
         }
 
+        // 验证 GitHub URL 格式
+        if (!isValidGitHubUrl(githubUrl)) {
+            throw new IllegalArgumentException("无效的 GitHub URL 格式");
+        }
+
         // 创建提交记录
         Submission submission = Submission.builder()
             .githubUrl(githubUrl)
@@ -143,6 +148,62 @@ public class TeamManagementService {
         project.addSubmission(submission);
 
         return project;
+    }
+
+    /**
+     * 提交代码（带 commit hash）
+     *
+     * @param projectId 项目ID
+     * @param githubUrl GitHub URL
+     * @param branch Git 分支
+     * @param commitHash commit 哈希
+     * @param submitter 提交者
+     * @return 更新后的项目
+     */
+    public HackathonProject submitCodeWithCommit(
+            String projectId,
+            String githubUrl,
+            String branch,
+            String commitHash,
+            Participant submitter) {
+
+        HackathonProject project = getProjectById(projectId);
+        if (project == null) {
+            throw new IllegalArgumentException("项目不存在: " + projectId);
+        }
+
+        // 验证提交者是团队成员
+        if (!project.getTeam().isMember(submitter)) {
+            throw new IllegalArgumentException("只有团队成员才能提交代码");
+        }
+
+        // 验证 GitHub URL 格式
+        if (!isValidGitHubUrl(githubUrl)) {
+            throw new IllegalArgumentException("无效的 GitHub URL 格式");
+        }
+
+        // 创建提交记录
+        Submission submission = Submission.builder()
+            .githubUrl(githubUrl)
+            .gitBranch(branch != null ? branch : "main")
+            .commitHash(commitHash)
+            .submitter(submitter)
+            .build();
+
+        // 添加到项目
+        project.addSubmission(submission);
+
+        return project;
+    }
+
+    /**
+     * 验证 GitHub URL 格式
+     */
+    private boolean isValidGitHubUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        return url.matches("^https?://github\\.com/[\\w-]+/[\\w.-]+.*$");
     }
 
     /**
