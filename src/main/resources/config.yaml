@@ -7,10 +7,12 @@
 aiService:
   provider: "deepseek"  # deepseek, openai, etc.
   apiKey: "sk-1c780a5ae9c94d63861d90d5d1930481"  # 环境变量或直接配置
-  baseUrl: "https://api.deepseek.com/v1"
-  model: "deepseek-chat"
-  maxTokens: 4000
-  temperature: 0.3
+  baseUrl: "https://api.deepseek.com/v1/chat/completions"
+#  model: "deepseek-chat"
+#  baseUrl: "http://localhost:11434/api/chat"
+  model: "deepseek-r1"
+  maxTokens: 8000
+  temperature: 0
 
   # 超时配置 (毫秒) - Hackathon专用优化
   connectTimeout: 300000    # 连接超时: 300秒

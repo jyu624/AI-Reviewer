@@ -230,7 +230,7 @@ public class AsyncDeepseekAIService implements AsyncAIService {
      */
     private String makeApiCall(String requestBody) throws IOException {
         Request request = new Request.Builder()
-                .url(baseUrl + "/chat/completions")
+                .url(baseUrl)
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .addHeader("Content-Type", "application/json")
                 .post(RequestBody.create(requestBody, MediaType.parse("application/json")))

@@ -103,7 +103,7 @@ aiService:
   apiKey: "${DEEPSEEK_API_KEY}"
   baseUrl: "https://api.deepseek.com/v1"
   model: "deepseek-chat"
-  maxTokens: 2000  # Hackathon模式减少token使用
+  maxTokens: 50000  # Hackathon模式减少token使用
   temperature: 0.3
 
   # 超时配置 (毫秒) - Hackathon专用优化
