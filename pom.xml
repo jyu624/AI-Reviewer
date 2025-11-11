@@ -88,14 +88,14 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>4.13.1</version>
         </dependency>
-        
+
         <!-- Apache Tika for file type detection -->
         <dependency>
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>2.9.2</version>
         </dependency>
-        
+
         <!-- Graphviz for visualization (optional) -->
         <dependency>
             <groupId>guru.nidi</groupId>
@@ -168,6 +168,34 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <!-- 传递给单元测试JVM的系统属性 -->
+                    <systemProperties>
+                        <!-- HTTP代理（可选，若需要） -->
+                        <property>
+                            <name>http.proxyHost</name>
+                            <value>localhost</value> <!-- 例如：127.0.0.1 -->
+                        </property>
+                        <property>
+                            <name>http.proxyPort</name>
+                            <value>7890</value> <!-- 例如：1080 -->
+                        </property>
+
+                        <!-- HTTPS代理（GitHub主要用HTTPS，必须配置） -->
+                        <property>
+                            <name>https.proxyHost</name>
+                            <value>localhost</value>
+                        </property>
+                        <property>
+                            <name>https.proxyPort</name>
+                            <value>7890</value>
+                        </property>
+                        <!-- 非代理主机列表：所有不在此列表的主机（含GitHub）会走代理 -->
+                        <property>
+                            <name>https.nonProxyHosts</name>
+                            <!-- 按需添加你的内部域名、本地地址等，用|分隔 -->
+                            <value>localhost|127.0.0.1|*.local|*.internal|*.your-company.com|*.baidu.com|*.google.com|*</value>
+                        </property>
+                    </systemProperties>
                     <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
