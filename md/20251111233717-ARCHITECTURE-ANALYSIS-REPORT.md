@@ -878,5 +878,5 @@ Sonet 4.5生成的最后一个md是
 ```bash
 接下来我将安排任务，要求过程中所有生成的markdown文件名带上YYYYMMDDHHmmss的时间戳前缀，并且将其归档到创建好的md文件夹中。
 你的身份是世界上最顶级的架构师，接下来我们在top.yumbo.ai.refactor包下实现文档中8.1方案1，引入六边形架构的重构，要求不能引用旧的类或接口，类名/文件名可以一样。
-让我们在新的包top.yumbo.ai.refactor
+让我们在新的包top.yumbo.ai.reviewer
 ```

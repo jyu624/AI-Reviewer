@@ -76,7 +76,7 @@
 ## 📦 包结构
 
 ```
-top.yumbo.ai.refactor/
+top.yumbo.ai.reviewer/
 ├── domain/
 │   └── model/                          # 领域模型层
 │       ├── Project.java                # 项目实体（核心领域对象）
@@ -296,13 +296,13 @@ public void put(String key, String value, long ttlSeconds) {
 
 ```bash
 # 同步分析
-java -jar ai-reviewer-refactor.jar --project /path/to/project
+java -jar ai-reviewer-reviewer.jar --project /path/to/project
 
 # 异步分析，保存报告
-java -jar ai-reviewer-refactor.jar -p /project -a -o report.md
+java -jar ai-reviewer-reviewer.jar -p /project -a -o report.md
 
 # 生成HTML报告
-java -jar ai-reviewer-refactor.jar -p . -f html -o report.html
+java -jar ai-reviewer-reviewer.jar -p . -f html -o report.html
 ```
 
 ### 2. API编程使用
@@ -596,7 +596,7 @@ private String doAnalyzeWithRetry(String prompt) {
 
 ---
 
-**声明**: 本次重构完全基于六边形架构原则，所有代码均在新包`top.yumbo.ai.refactor`中实现，与旧代码完全隔离，互不影响。重构代码已经过架构验证，可直接用于生产环境。
+**声明**: 本次重构完全基于六边形架构原则，所有代码均在新包`top.yumbo.ai.reviewer`中实现，与旧代码完全隔离，互不影响。重构代码已经过架构验证，可直接用于生产环境。
 
 **下一步**: 建议编写单元测试和集成测试，确保所有功能正常工作后，逐步迁移旧代码的用户到新架构。
 

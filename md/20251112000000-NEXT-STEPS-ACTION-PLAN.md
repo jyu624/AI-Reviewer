@@ -4,7 +4,7 @@
 > **架构师**: 世界顶级架构师团队  
 > **当前版本**: AI-Reviewer v2.0-Hexagonal  
 > **规划版本**: v2.1 - v3.0  
-> **重构包**: `top.yumbo.ai.refactor`
+> **重构包**: `top.yumbo.ai.reviewer`
 
 ---
 

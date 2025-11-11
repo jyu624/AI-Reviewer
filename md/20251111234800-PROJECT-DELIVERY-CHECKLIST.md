@@ -3,7 +3,7 @@
 > **交付日期**: 2025-01-11 23:48:00  
 > **架构师**: 世界顶级架构师团队  
 > **项目版本**: AI-Reviewer v2.0-Hexagonal  
-> **重构包**: `top.yumbo.ai.refactor`
+> **重构包**: `top.yumbo.ai.reviewer`
 
 ---
 
@@ -15,7 +15,7 @@
 
 ##### 领域模型层 (8个文件)
 ```
-top.yumbo.ai.refactor.domain.model/
+top.yumbo.ai.reviewer.domain.model/
 ├── ✅ Project.java                  # 项目实体（核心领域对象）
 ├── ✅ ProjectType.java              # 项目类型枚举
 ├── ✅ ProjectMetadata.java          # 项目元数据
@@ -28,7 +28,7 @@ top.yumbo.ai.refactor.domain.model/
 
 ##### 端口层 (5个接口)
 ```
-top.yumbo.ai.refactor.application.port/
+top.yumbo.ai.reviewer.application.port/
 ├── input/                           # 输入端口（Use Cases）
 │   ├── ✅ ProjectAnalysisUseCase.java
 │   └── ✅ ReportGenerationUseCase.java
@@ -40,14 +40,14 @@ top.yumbo.ai.refactor.application.port/
 
 ##### 应用服务层 (2个服务)
 ```
-top.yumbo.ai.refactor.application.service/
+top.yumbo.ai.reviewer.application.service/
 ├── ✅ ProjectAnalysisService.java   # 项目分析服务
 └── ✅ ReportGenerationService.java  # 报告生成服务
 ```
 
 ##### 适配器层 (5个适配器)
 ```
-top.yumbo.ai.refactor.adapter/
+top.yumbo.ai.reviewer.adapter/
 ├── input/                           # 输入适配器
 │   ├── cli/
 │   │   └── ✅ CommandLineAdapter.java   # CLI适配器 ⭐ 主入口
@@ -177,31 +177,35 @@ mvn clean package
 
 # 运行分析
 java -cp target/ai-reviewer-2.0.jar \
-  top.yumbo.ai.refactor.adapter.input.cli.CommandLineAdapter \
+  top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter \
   --project /path/to/project \
   --output report.md
 
 # 查看帮助
 java -cp target/ai-reviewer-2.0.jar \
-  top.yumbo.ai.refactor.adapter.input.cli.CommandLineAdapter \
+  top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter \
   --help
 ```
 
 ### 方式2: API编程（推荐集成使用）
 
 ```java
-import top.yumbo.ai.refactor.adapter.input.api.APIAdapter;
+import top.yumbo.ai.reviewer.adapter.input.api.APIAdapter;
 
 // 创建API适配器
 APIAdapter api = new APIAdapter();
 
-// 同步分析
-var response = api.analyzeProject(
-    new APIAdapter.AnalysisRequest("/path/to/project", null)
-);
+        // 同步分析
+        var response = api.analyzeProject(
+                new APIAdapter.AnalysisRequest("/path/to/project", null)
+        );
 
-System.out.println("评分: " + response.overallScore());
-System.out.println("等级: " + response.grade());
+System.out.
+
+        println("评分: "+response.overallScore());
+        System.out.
+
+        println("等级: "+response.grade());
 ```
 
 ### 方式3: 自定义配置（推荐企业使用）

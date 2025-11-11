@@ -182,7 +182,7 @@ top.yumbo.ai.reviewer/
 
 #### 新架构包结构
 ```
-top.yumbo.ai.refactor/
+top.yumbo.ai.reviewer/
 ├── domain/
 │   └── model/                # 领域模型（充血）
 │       ├── Project.java      # ✅ 包含业务逻辑

@@ -32,10 +32,9 @@
 ### 1. 移除未使用的import ✅
 
 **修复前**:
+
 ```java
-import top.yumbo.ai.refactor.adapter.input.cli.CommandLineInterface;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+
 ```
 
 **修复后**:

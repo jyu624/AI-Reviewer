@@ -2,13 +2,13 @@
 
 > **文档创建时间**: 2025-01-11 23:42:00  
 > **适用版本**: AI-Reviewer v2.0-Hexagonal  
-> **包路径**: `top.yumbo.ai.refactor`
+> **包路径**: `top.yumbo.ai.reviewer`
 
 ---
 
 ## 🎯 重构概述
 
-本次重构在全新的包`top.yumbo.ai.refactor`中实现了完整的**六边形架构（Hexagonal Architecture）**，与旧代码完全隔离，互不影响。
+本次重构在全新的包`top.yumbo.ai.reviewer`中实现了完整的**六边形架构（Hexagonal Architecture）**，与旧代码完全隔离，互不影响。
 
 ---
 
@@ -16,7 +16,7 @@
 
 ### 1. 领域模型层 (8个类)
 ```
-top.yumbo.ai.refactor.domain.model
+top.yumbo.ai.reviewer.domain.model
 ├── Project.java              # 项目实体（核心）
 ├── ProjectType.java          # 项目类型枚举
 ├── ProjectMetadata.java      # 项目元数据
@@ -29,7 +29,7 @@ top.yumbo.ai.refactor.domain.model
 
 ### 2. 端口层 (5个接口)
 ```
-top.yumbo.ai.refactor.application.port
+top.yumbo.ai.reviewer.application.port
 ├── input/                     # 输入端口（Use Cases）
 │   ├── ProjectAnalysisUseCase.java
 │   └── ReportGenerationUseCase.java
@@ -41,14 +41,14 @@ top.yumbo.ai.refactor.application.port
 
 ### 3. 应用服务层 (2个服务)
 ```
-top.yumbo.ai.refactor.application.service
+top.yumbo.ai.reviewer.application.service
 ├── ProjectAnalysisService.java   # 项目分析服务（核心编排）
 └── ReportGenerationService.java  # 报告生成服务
 ```
 
 ### 4. 适配器层 (5个适配器)
 ```
-top.yumbo.ai.refactor.adapter
+top.yumbo.ai.reviewer.adapter
 ├── input/                        # 输入适配器
 │   ├── cli/
 │   │   └── CommandLineAdapter.java   # CLI适配器 ⭐ 主入口
@@ -77,32 +77,32 @@ mvn clean package
 
 # 运行CLI适配器
 java -cp target/ai-reviewer-2.0.jar \
-  top.yumbo.ai.refactor.adapter.input.cli.CommandLineAdapter \
+  top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter \
   --project /path/to/project \
   --output report.md \
   --format markdown
 
 # 异步分析
 java -cp target/ai-reviewer-2.0.jar \
-  top.yumbo.ai.refactor.adapter.input.cli.CommandLineAdapter \
+  top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter \
   -p /project -a -o report.html -f html
 ```
 
 ### 方式2: API编程使用
 
 ```java
-import top.yumbo.ai.refactor.adapter.input.api.APIAdapter;
+import top.yumbo.ai.reviewer.adapter.input.api.APIAdapter;
 
 public class MyApp {
     public static void main(String[] args) {
         // 创建API适配器
         APIAdapter api = new APIAdapter();
-        
+
         // 同步分析
         var response = api.analyzeProject(
-            new APIAdapter.AnalysisRequest("/path/to/project", null)
+                new APIAdapter.AnalysisRequest("/path/to/project", null)
         );
-        
+
         System.out.println("评分: " + response.overallScore());
         System.out.println("等级: " + response.grade());
     }
@@ -112,23 +112,23 @@ public class MyApp {
 ### 方式3: 自定义集成
 
 ```java
-import top.yumbo.ai.refactor.adapter.output.ai.DeepSeekAIAdapter;
-import top.yumbo.ai.refactor.adapter.output.cache.FileCacheAdapter;
-import top.yumbo.ai.refactor.adapter.output.filesystem.LocalFileSystemAdapter;
-import top.yumbo.ai.refactor.application.service.ProjectAnalysisService;
+import top.yumbo.ai.reviewer.adapter.output.ai.DeepSeekAIAdapter;
+import top.yumbo.ai.reviewer.adapter.output.cache.FileCacheAdapter;
+import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
+import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
 
 // 创建自定义配置的服务
 var aiAdapter = new DeepSeekAIAdapter(myConfig);
-var cacheAdapter = new FileCacheAdapter(myCachePath);
-var fsAdapter = new LocalFileSystemAdapter(myFsConfig);
+        var cacheAdapter = new FileCacheAdapter(myCachePath);
+        var fsAdapter = new LocalFileSystemAdapter(myFsConfig);
 
-var analysisService = new ProjectAnalysisService(
-    aiAdapter, cacheAdapter, fsAdapter
-);
+        var analysisService = new ProjectAnalysisService(
+                aiAdapter, cacheAdapter, fsAdapter
+        );
 
-// 使用服务
-var project = ...; // 构建项目对象
-var task = analysisService.analyzeProject(project);
+        // 使用服务
+        var project = ...; // 构建项目对象
+        var task = analysisService.analyzeProject(project);
 ```
 
 ---
@@ -300,7 +300,7 @@ var service = new ProjectAnalysisService(
 ## ⚠️ 注意事项
 
 ### 1. 与旧代码隔离
-- ✅ 新代码在独立包中：`top.yumbo.ai.refactor`
+- ✅ 新代码在独立包中：`top.yumbo.ai.reviewer`
 - ✅ 不依赖旧代码，不影响旧功能
 - ✅ 可以并行运行新旧两套系统
 
@@ -405,7 +405,7 @@ System.out.println(response.overallScore()); // 可能NPE
 
 ---
 
-**开始使用**: `java top.yumbo.ai.refactor.adapter.input.cli.CommandLineAdapter --help`
+**开始使用**: `java top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter --help`
 
 **反馈**: architecture@ai-reviewer.com
 

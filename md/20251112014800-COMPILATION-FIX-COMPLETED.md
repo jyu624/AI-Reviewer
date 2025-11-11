@@ -30,9 +30,9 @@
 **问题**: 找不到符号 FileCategory  
 **原因**: FileCategory是SourceFile的内部枚举  
 **修复**:
+
 ```java
 // 添加import
-import top.yumbo.ai.refactor.domain.model.SourceFile.FileCategory;
 ```
 **影响**: 5个错误 → 0个
 

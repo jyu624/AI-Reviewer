@@ -48,7 +48,7 @@ src/test/java/top/yumbo/ai/refactor/integration/
 ```
 错误: 找不到符号 FileCategory
 原因: FileCategory是SourceFile的内部类
-修复: import top.yumbo.ai.refactor.domain.model.SourceFile.FileCategory;
+修复: import top.yumbo.ai.reviewer.domain.model.SourceFile.FileCategory;
 ```
 
 #### 2. 方法签名不匹配 (6个)
