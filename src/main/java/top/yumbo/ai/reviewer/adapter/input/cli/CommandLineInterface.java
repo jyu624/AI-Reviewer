@@ -21,8 +21,21 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * 命令行界面适配器
- * 提供用户友好的命令行交互
+ * 命令行交互界面 - 通用代码审查
+ * 提供用户友好的交互式命令行界面
+ *
+ * <p>职责：
+ * <ul>
+ *   <li>提供交互式菜单和命令</li>
+ *   <li>引导用户完成项目分析流程</li>
+ *   <li>提供友好的输出和错误提示</li>
+ * </ul>
+ *
+ * <p><b>注意：</b>这是通用的交互式CLI，黑客松评审请使用专用工具
+ *
+ * @author AI-Reviewer Team
+ * @version 2.0 (六边形架构重构版)
+ * @since 2025-11-13
  */
 @Slf4j
 public class CommandLineInterface {
@@ -362,7 +375,11 @@ public class CommandLineInterface {
         System.out.println("  • 交互式分析提供更多选项");
         System.out.println("  • 快速分析使用默认设置");
         System.out.println("  • 异步分析可在后台运行");
-        System.out.println("  • 支持Markdown/HTML/JSON报告格式\n");
+        System.out.println("  • 支持Markdown/HTML/JSON报告格式");
+        System.out.println("\n🏆 黑客松评审:");
+        System.out.println("  • 请使用专用工具: HackathonCommandLineApp");
+        System.out.println("  • 支持GitHub/Gitee仓库评审");
+        System.out.println("  • 自动生成评分和排行榜\n");
     }
 
     /**
