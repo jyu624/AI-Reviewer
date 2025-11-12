@@ -886,7 +886,7 @@ chore: 构建配置
 
 本项目采用 **Apache License 2.0** 开源协议。
 
-详见 [LICENSE-2.0.txt](LICENSE.txt)
+详见 [LICENSE.txt](LICENSE.txt)
 
 ---
 
