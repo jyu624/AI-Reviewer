@@ -40,24 +40,17 @@ public class ClaudeAdapter implements AIServicePort {
     private final HttpClient httpClient;
 
     /**
-     * 构造函数 - 使用默认配置
+     * 构造函数 - 使用 AIServiceConfig
      */
-    public ClaudeAdapter(String apiKey) {
-        this(apiKey, DEFAULT_API_URL, DEFAULT_MODEL);
-    }
-
-    /**
-     * 构造函数 - 自定义配置
-     */
-    public ClaudeAdapter(String apiKey, String apiUrl, String model) {
-        this.apiKey = apiKey;
-        this.apiUrl = apiUrl;
-        this.model = model;
+    public ClaudeAdapter(AIServiceConfig config) {
+        this.apiKey = config.apiKey();
+        this.apiUrl = config.baseUrl() != null ? config.baseUrl() : DEFAULT_API_URL;
+        this.model = config.model() != null ? config.model() : DEFAULT_MODEL;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
+                .connectTimeout(Duration.ofMillis(config.connectTimeoutMillis()))
                 .build();
 
-        log.info("Claude适配器初始化完成: model={}, url={}", model, apiUrl);
+        log.info("Claude适配器初始化完成: model={}, url={}", this.model, this.apiUrl);
     }
 
     @Override

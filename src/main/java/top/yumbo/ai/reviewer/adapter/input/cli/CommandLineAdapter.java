@@ -1,18 +1,19 @@
 package top.yumbo.ai.reviewer.adapter.input.cli;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
+import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.adapter.output.repository.GiteeRepositoryAdapter;
 import top.yumbo.ai.reviewer.adapter.output.repository.GitHubRepositoryAdapter;
-import top.yumbo.ai.reviewer.adapter.output.ai.AIServiceConfig;
-import top.yumbo.ai.reviewer.adapter.output.ai.DeepSeekAIAdapter;
-import top.yumbo.ai.reviewer.adapter.output.cache.FileCacheAdapter;
-import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.application.port.input.ProjectAnalysisUseCase;
 import top.yumbo.ai.reviewer.application.port.input.ReportGenerationUseCase;
-import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
-import top.yumbo.ai.reviewer.application.service.ReportGenerationService;
 import top.yumbo.ai.reviewer.domain.hackathon.model.*;
 import top.yumbo.ai.reviewer.domain.model.*;
+import top.yumbo.ai.reviewer.infrastructure.config.Configuration;
+import top.yumbo.ai.reviewer.infrastructure.config.ConfigurationLoader;
+import top.yumbo.ai.reviewer.infrastructure.di.ApplicationModule;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,32 +25,54 @@ import java.util.List;
 /**
  * 命令行适配器
  * 提供命令行接口，连接用户输入和应用服务
+ *
+ * @author AI-Reviewer Team
+ * @version 2.0 (使用依赖注入)
+ * @since 2025-11-13
  */
 @Slf4j
 public class CommandLineAdapter {
 
     private final ProjectAnalysisUseCase analysisUseCase;
     private final ReportGenerationUseCase reportUseCase;
+    private final Configuration configuration;
+    private final LocalFileSystemAdapter fileSystemAdapter;
 
-    public CommandLineAdapter() {
-        // 初始化适配器
-        DeepSeekAIAdapter aiAdapter = createAIAdapter();
-        FileCacheAdapter cacheAdapter = new FileCacheAdapter();
-        LocalFileSystemAdapter fileSystemAdapter = createFileSystemAdapter();
-
-        // 初始化服务
-        this.analysisUseCase = new ProjectAnalysisService(
-                aiAdapter, cacheAdapter, fileSystemAdapter);
-        this.reportUseCase = new ReportGenerationService(fileSystemAdapter);
+    /**
+     * 构造函数注入
+     */
+    @Inject
+    public CommandLineAdapter(
+            ProjectAnalysisUseCase analysisUseCase,
+            ReportGenerationUseCase reportUseCase,
+            Configuration configuration,
+            LocalFileSystemAdapter fileSystemAdapter) {
+        this.analysisUseCase = analysisUseCase;
+        this.reportUseCase = reportUseCase;
+        this.configuration = configuration;
+        this.fileSystemAdapter = fileSystemAdapter;
     }
 
     /**
      * 主入口
      */
     public static void main(String[] args) {
-        CommandLineAdapter cli = new CommandLineAdapter();
-
         try {
+            // 1. 加载配置
+            log.info("正在加载配置...");
+            Configuration config = ConfigurationLoader.load();
+
+            // 2. 创建依赖注入容器
+            log.debug("正在初始化依赖注入容器...");
+            Injector injector = Guice.createInjector(new ApplicationModule(config));
+
+            // 3. 获取 CLI 适配器实例
+            CommandLineAdapter cli = injector.getInstance(CommandLineAdapter.class);
+
+            log.info("AI-Reviewer v2.0 已启动");
+            log.info("AI 服务: {} (model: {})", config.getAiProvider(), config.getAiModel());
+
+            // 4. 执行命令
             if (args.length > 0 && "hackathon".equals(args[0])) {
                 // Hackathon mode
                 HackathonArguments hackArgs = cli.parseHackathonArguments(args);
@@ -59,10 +82,16 @@ public class CommandLineAdapter {
                 CLIArguments cliArgs = cli.parseArguments(args);
                 cli.execute(cliArgs);
             }
+        } catch (Configuration.ConfigurationException e) {
+            log.error("配置错误: {}", e.getMessage());
+            System.err.println("❌ 配置错误: " + e.getMessage());
+            System.err.println("\n请检查:");
+            System.err.println("  1. 环境变量 AI_API_KEY 或 DEEPSEEK_API_KEY 是否设置");
+            System.err.println("  2. config.yaml 文件是否正确配置");
+            System.exit(1);
         } catch (Exception e) {
             log.error("执行失败", e);
-            System.err.println("错误: " + e.getMessage());
-            cli.printUsage();
+            System.err.println("❌ 错误: " + e.getMessage());
             System.exit(1);
         }
     }
@@ -75,11 +104,10 @@ public class CommandLineAdapter {
 
         // 1. 扫描项目
         System.out.println("正在扫描项目...");
-        LocalFileSystemAdapter fsAdapter = createFileSystemAdapter();
         Path projectRoot = Paths.get(args.projectPath());
 
-        List<SourceFile> sourceFiles = fsAdapter.scanProjectFiles(projectRoot);
-        String structureTree = fsAdapter.generateProjectStructure(projectRoot);
+        List<SourceFile> sourceFiles = fileSystemAdapter.scanProjectFiles(projectRoot);
+        String structureTree = fileSystemAdapter.generateProjectStructure(projectRoot);
 
         // 2. 构建项目对象
         Project project = Project.builder()
@@ -194,11 +222,10 @@ public class CommandLineAdapter {
                 System.out.println("使用本地目录: " + projectPath);
             }
 
-            // 2. 扫描项目
-            System.out.println("\n正在扫描项目...");
-            LocalFileSystemAdapter fsAdapter = createFileSystemAdapter();
-            List<SourceFile> sourceFiles = fsAdapter.scanProjectFiles(projectPath);
-            String structureTree = fsAdapter.generateProjectStructure(projectPath);
+        // 2. 扫描和构建项目
+        System.out.println("正在扫描项目...");
+            List<SourceFile> sourceFiles = fileSystemAdapter.scanProjectFiles(projectPath);
+            String structureTree = fileSystemAdapter.generateProjectStructure(projectPath);
 
             // 3. 构建项目对象
             Project project = Project.builder()
@@ -476,41 +503,7 @@ public class CommandLineAdapter {
         return ProjectType.UNKNOWN;
     }
 
-    /**
-     * 创建AI适配器
-     */
-    private DeepSeekAIAdapter createAIAdapter() {
-        // 从环境变量或配置文件读取
-        String apiKey = System.getenv("DEEPSEEK_API_KEY");
 
-        return new DeepSeekAIAdapter(new AIServiceConfig(
-                apiKey,
-                "https://api.deepseek.com/v1",
-                "deepseek-chat",
-                4000,
-                0.3,
-                3,
-                3,
-                1000,
-                30000,
-                60000,
-                null  // region
-        ));
-    }
-
-    /**
-     * 创建文件系统适配器
-     */
-    private LocalFileSystemAdapter createFileSystemAdapter() {
-        return new LocalFileSystemAdapter(
-                new LocalFileSystemAdapter.FileSystemConfig(
-                        List.of("*.java", "*.py", "*.js", "*.ts", "*.xml", "*.yaml", "*.md"),
-                        List.of("*test*", "*.class", "*.jar", "node_modules", "target", "build"),
-                        1024,
-                        4
-                )
-        );
-    }
 
     /**
      * CLI参数记录

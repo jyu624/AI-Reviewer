@@ -123,6 +123,13 @@
       <version>1.0.87</version>
     </dependency>
 
+    <!-- Dependency Injection -->
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <version>7.0.0</version>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

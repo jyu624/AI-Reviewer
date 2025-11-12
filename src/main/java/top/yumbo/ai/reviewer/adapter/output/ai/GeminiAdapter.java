@@ -34,23 +34,16 @@ public class GeminiAdapter implements AIServicePort {
     private final HttpClient httpClient;
 
     /**
-     * 构造函数 - 使用默认配置
+     * 构造函数 - 使用 AIServiceConfig
      */
-    public GeminiAdapter(String apiKey) {
-        this(apiKey, DEFAULT_MODEL);
-    }
-
-    /**
-     * 构造函数 - 自定义配置
-     */
-    public GeminiAdapter(String apiKey, String model) {
-        this.apiKey = apiKey;
-        this.model = model;
+    public GeminiAdapter(AIServiceConfig config) {
+        this.apiKey = config.apiKey();
+        this.model = config.model() != null ? config.model() : DEFAULT_MODEL;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
+                .connectTimeout(Duration.ofMillis(config.connectTimeoutMillis()))
                 .build();
 
-        log.info("Gemini适配器初始化完成: model={}", model);
+        log.info("Gemini适配器初始化完成: model={}", this.model);
     }
 
     @Override
