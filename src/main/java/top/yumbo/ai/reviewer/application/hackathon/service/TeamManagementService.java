@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.adapter.input.hackathon.application;
+package top.yumbo.ai.reviewer.application.hackathon.service;
 
 import top.yumbo.ai.reviewer.domain.hackathon.model.*;
 
@@ -422,4 +422,5 @@ public class TeamManagementService {
         participants.clear();
     }
 }
+
 

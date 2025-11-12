@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.adapter.input.hackathon.application;
+package top.yumbo.ai.reviewer.application.hackathon.service;
 
 import top.yumbo.ai.reviewer.domain.hackathon.model.*;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
@@ -163,4 +163,5 @@ public class HackathonAnalysisService {
         return latestSubmission != null && latestSubmission.getStatus().canStartReview();
     }
 }
+
 

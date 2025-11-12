@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.adapter.input.hackathon.application;
+package top.yumbo.ai.reviewer.application.hackathon.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -424,4 +424,5 @@ public class HackathonIntegrationService {
         }
     }
 }
+
 

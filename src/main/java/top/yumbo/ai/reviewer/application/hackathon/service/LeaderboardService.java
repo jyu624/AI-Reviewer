@@ -1,4 +1,4 @@
-package top.yumbo.ai.reviewer.adapter.input.hackathon.application;
+package top.yumbo.ai.reviewer.application.hackathon.service;
 
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonProject;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
@@ -359,4 +359,5 @@ public class LeaderboardService {
         return new ArrayList<>(leaderboardCache.keySet());
     }
 }
+
 
