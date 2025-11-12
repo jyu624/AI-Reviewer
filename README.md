@@ -24,9 +24,335 @@
 
 **AI-Reviewer** 是一款采用**六边形架构（Hexagonal Architecture）**设计的企业级智能代码评审框架。它能够自动分析项目代码质量、架构设计、技术债务等多个维度，并生成详细的评审报告，特别适用于黑客松项目评分、代码质量评估、技术债务管理等场景。
 
-## 引入AI-Reviewer引擎框架示例：
+## 🎨 框架能力与扩展指南
 
-### - [黑客松评分系统](./HACKATHON-GUIDE.md)
+AI-Reviewer 采用六边形架构设计，为开发者提供了强大的扩展能力。通过研究**黑客松评分系统**这个完整示例，您可以快速构建类似的应用。
+
+### 📦 引入AI-Reviewer引擎框架示例
+
+#### ✅ **已实现：[黑客松评分系统](./doc/HACKATHON/HACKATHON-GUIDE.md)**
+
+一个完整的黑客松项目评审系统，包含：
+- 🔄 **Git集成** - 自动从GitHub/Gitee克隆项目
+- 🤖 **智能评分** - 多维度AI评分（代码质量、创新性、完整性、文档）
+- 👥 **团队管理** - 完整的团队和参与者管理
+- 📊 **排行榜** - 实时生成评分排行榜
+- 📝 **报告生成** - 详细的评审报告（JSON/Markdown）
+
+#### 🚀 **您可以基于此框架快速构建**
+
+基于黑客松示例，您可以扩展出更多应用场景：
+
+<details>
+<summary><b>1. 📚 代码培训平台</b></summary>
+
+```
+application/training/
+├── cli/
+│   └── TrainingCommandLineApp.java
+├── service/
+│   ├── ExerciseManagementService.java
+│   ├── StudentProgressService.java
+│   └── AutoGradingService.java
+└── model/
+    ├── Exercise.java
+    ├── Submission.java
+    └── StudentProgress.java
+```
+
+**复用能力**：
+- ✅ AI代码分析引擎
+- ✅ 评分系统
+- ✅ 报告生成
+- ✅ Git项目管理
+
+**新增功能**：
+- 练习库管理
+- 学生进度跟踪
+- 自动评分
+- 学习路径推荐
+
+</details>
+
+<details>
+<summary><b>2. 🏆 代码竞赛平台</b></summary>
+
+```
+application/contest/
+├── cli/
+│   └── ContestCommandLineApp.java
+├── service/
+│   ├── ContestManagementService.java
+│   ├── SubmissionValidationService.java
+│   └── LiveRankingService.java
+└── model/
+    ├── Contest.java
+    ├── Participant.java
+    └── ContestSubmission.java
+```
+
+**复用能力**：
+- ✅ 实时评分系统
+- ✅ 排行榜生成
+- ✅ 多项目并发分析
+- ✅ 缓存机制
+
+**新增功能**：
+- 时间限制控制
+- 实时排名更新
+- 作弊检测
+- 性能基准测试
+
+</details>
+
+<details>
+<summary><b>3. 🎓 代码认证系统</b></summary>
+
+```
+application/certification/
+├── cli/
+│   └── CertificationCommandLineApp.java
+├── service/
+│   ├── CertificationService.java
+│   ├── SkillAssessmentService.java
+│   └── BadgeManagementService.java
+└── model/
+    ├── Certification.java
+    ├── SkillLevel.java
+    └── Badge.java
+```
+
+**复用能力**：
+- ✅ 多维度评估
+- ✅ 详细报告生成
+- ✅ AI智能分析
+- ✅ 标准化评分
+
+**新增功能**：
+- 技能等级评定
+- 证书生成
+- 徽章系统
+- 技能图谱
+
+</details>
+
+<details>
+<summary><b>4. 🔍 代码审计工具</b></summary>
+
+```
+application/audit/
+├── cli/
+│   └── AuditCommandLineApp.java
+├── service/
+│   ├── SecurityAuditService.java
+│   ├── ComplianceCheckService.java
+│   └── VulnerabilityDetectionService.java
+└── model/
+    ├── SecurityIssue.java
+    ├── ComplianceReport.java
+    └── VulnerabilityScore.java
+```
+
+**复用能力**：
+- ✅ 深度代码分析
+- ✅ 多语言支持
+- ✅ 批量处理
+- ✅ 缓存优化
+
+**新增功能**：
+- 安全漏洞检测
+- 合规性检查
+- 风险评级
+- 修复建议
+
+</details>
+
+### 🛠️ 框架提供的核心能力
+
+基于黑客松示例，框架为您提供以下**开箱即用**的能力：
+
+#### 1️⃣ **多AI服务集成**
+```yaml
+# 轻松切换AI服务商
+aiService:
+  provider: "deepseek"  # 支持: deepseek, openai, gemini, claude
+  apiKey: "your-api-key"
+  model: "deepseek-chat"
+```
+
+**支持的AI服务**：
+- 🔵 **DeepSeek** - 高性价比，适合大规模评审
+- 🟢 **OpenAI** - GPT-4/GPT-3.5，强大的理解能力
+- 🔴 **Gemini** - Google AI，多模态支持
+- 🟣 **Claude** - Anthropic，长文本处理
+- 🟠 **AWS Bedrock** - 企业级AI服务
+
+#### 2️⃣ **Git平台集成**
+```java
+// 统一的仓库端口，支持多平台
+RepositoryPort repoPort = new GitHubAdapter(tempDir);
+// 或
+RepositoryPort repoPort = new GiteeAdapter(tempDir);
+
+CloneRequest request = CloneRequest.builder()
+    .url("https://github.com/user/project")
+    .branch("main")
+    .build();
+Path projectPath = repoPort.cloneRepository(request);
+```
+
+**支持的Git平台**：
+- 🐙 **GitHub** - 全球最大代码托管平台
+- 🍊 **Gitee** - 国内高速访问
+- 🦊 **GitLab** - 私有部署支持（扩展中）
+
+#### 3️⃣ **智能分析引擎**
+```java
+// 核心分析服务，自动处理多语言项目
+ProjectAnalysisService analysisService;
+AnalysisTask task = analysisService.analyzeProject(project);
+
+// 支持异步分析、批量处理、智能缓存
+CompletableFuture<ReviewReport> future = 
+    analysisService.analyzeProjectAsync(project);
+```
+
+**分析能力**：
+- 📊 **代码质量** - 复杂度、重复率、命名规范
+- 🏗️ **架构设计** - 设计模式、SOLID原则、依赖分析
+- 🔒 **安全性** - 漏洞检测、敏感信息扫描
+- ⚡ **性能** - 性能瓶颈、资源使用
+- 📚 **文档** - 文档完整性、注释质量
+
+#### 4️⃣ **多维度评分系统**
+```java
+// 基于AI的智能评分
+HackathonScoringService scoringService;
+HackathonScore score = scoringService.calculateScore(project, report);
+
+// 自定义评分维度和权重
+score.getCodeQuality();      // 代码质量 (40%)
+score.getInnovation();        // 创新性 (30%)
+score.getCompleteness();      // 完整性 (20%)
+score.getDocumentation();     // 文档 (10%)
+```
+
+#### 5️⃣ **报告生成系统**
+```java
+// 多格式报告生成
+ReportGenerationService reportService;
+
+// Markdown报告
+reportService.saveReport(report, outputPath, "markdown");
+
+// JSON结构化数据
+reportService.saveReport(report, outputPath, "json");
+
+// HTML可视化报告
+reportService.saveReport(report, outputPath, "html");
+```
+
+#### 6️⃣ **缓存与性能优化**
+```yaml
+cache:
+  enabled: true
+  type: "file"  # 或 redis、memory
+  ttlHours: 24
+  maxConcurrency: 20  # 并发分析数
+```
+
+### 🔧 如何扩展新的应用
+
+参考黑客松示例，只需4步即可创建新应用：
+
+**Step 1: 创建领域模型**
+```java
+// application/yourapp/model/YourDomainModel.java
+@Data
+@Builder
+public class YourDomainModel {
+    private String id;
+    private String name;
+    // 您的业务字段
+}
+```
+
+**Step 2: 创建应用服务**
+```java
+// application/yourapp/service/YourApplicationService.java
+public class YourApplicationService {
+    private final ProjectAnalysisService analysisService;  // 复用
+    private final ReportGenerationService reportService;   // 复用
+    
+    public YourResult process(YourInput input) {
+        // 您的业务逻辑
+    }
+}
+```
+
+**Step 3: 创建CLI入口**
+```java
+// application/yourapp/cli/YourCommandLineApp.java
+public class YourCommandLineApp {
+    public static void main(String[] args) {
+        // 参考 HackathonCommandLineApp 实现
+    }
+}
+```
+
+**Step 4: 配置依赖注入**
+```java
+// infrastructure/di/YourModule.java
+public class YourModule extends AbstractModule {
+    @Override
+    protected void configure() {
+        bind(YourApplicationService.class);
+    }
+}
+```
+
+**Step 5: 创建应用文档** 📚
+```bash
+# 1. 创建应用文档目录
+mkdir doc/YOUR_APP
+
+# 2. 创建标准文档文件
+touch doc/YOUR_APP/YOUR_APP-GUIDE.md              # 完整使用指南
+touch doc/YOUR_APP/YOUR_APP-QUICK-REFERENCE.md    # 快速参考卡
+
+# 3. 更新文档索引
+# 在 doc/README.md 中添加您的应用文档导航
+```
+
+**文档组织规范**：
+```
+doc/
+├── YOUR_APP/                    # 您的应用文档目录
+│   ├── YOUR_APP-GUIDE.md        # 详细使用指南（必需）
+│   ├── YOUR_APP-QUICK-REFERENCE.md  # 快速参考卡（推荐）
+│   ├── YOUR_APP-IMPLEMENTATION-GUIDE.md  # 实现指南（可选）
+│   └── YOUR_APP-CONFIG-QUICKREF.md       # 配置参考（可选）
+│
+├── HACKATHON/                   # 黑客松应用（示例）
+│   ├── HACKATHON-GUIDE.md
+│   └── ...
+│
+└── README.md                    # 文档索引（更新后添加您的应用）
+```
+
+**文档编写建议**：
+- ✅ 参考 `doc/HACKATHON/` 目录下的文档结构
+- ✅ 使用统一的命名规范：`应用名-文档类型.md`
+- ✅ 在 `doc/README.md` 中添加您的应用导航链接
+- ✅ 在项目主 `README.md` 中添加您的应用介绍
+
+### 📖 详细文档
+
+- 📘 **[黑客松完整指南](./doc/HACKATHON/HACKATHON-GUIDE.md)** - 详细的使用说明
+- 🎯 **[黑客松快速参考](./doc/HACKATHON/HACKATHON-QUICK-REFERENCE.md)** - 一页纸速查表
+- 🏗️ **[架构设计文档](./doc/CLI-ARCHITECTURE.md)** - 架构图和设计原理  
+- 🔄 **[CLI重构说明](./doc/CLI-REFACTORING.md)** - 如何设计清晰的CLI
+- 📦 **[六边形架构指南](./md/20251111234200-HEXAGONAL-QUICKSTART-GUIDE.md)** - 架构最佳实践
 
 ### 🎯 设计理念
 
