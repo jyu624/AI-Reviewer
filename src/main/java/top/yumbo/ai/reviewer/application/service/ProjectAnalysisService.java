@@ -1,5 +1,6 @@
 package top.yumbo.ai.reviewer.application.service;
 
+import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.application.port.input.ProjectAnalysisUseCase;
 import top.yumbo.ai.reviewer.application.port.output.AIServicePort;
@@ -27,6 +28,7 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
     private final Map<String, AnalysisTask> tasks = new ConcurrentHashMap<>();
     private final Map<String, ReviewReport> reports = new ConcurrentHashMap<>();
 
+    @Inject
     public ProjectAnalysisService(
             AIServicePort aiServicePort,
             CachePort cachePort,

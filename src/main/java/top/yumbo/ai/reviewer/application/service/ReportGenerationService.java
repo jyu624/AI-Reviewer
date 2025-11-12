@@ -1,5 +1,6 @@
 package top.yumbo.ai.reviewer.application.service;
 
+import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.application.port.input.ReportGenerationUseCase;
 import top.yumbo.ai.reviewer.application.port.output.FileSystemPort;
@@ -19,6 +20,7 @@ public class ReportGenerationService implements ReportGenerationUseCase {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    @Inject
     public ReportGenerationService(FileSystemPort fileSystemPort) {
         this.fileSystemPort = fileSystemPort;
     }
@@ -201,18 +203,27 @@ public class ReportGenerationService implements ReportGenerationUseCase {
                   .replace("\t", "\\t");
     }
 
+    /**
+     * 将报告保存到文件（JSON/Markdown）
+     */
     @Override
     public void saveReport(ReviewReport report, Path outputPath, String format) {
-        log.info("保存报告到文件: {}, format={}", outputPath, format);
+        log.info("保存报告到: {} (格式={})", outputPath, format);
 
-        String content = switch (format.toLowerCase()) {
-            case "html" -> generateHtmlReport(report);
-            case "json" -> generateJsonReport(report);
-            default -> generateMarkdownReport(report);
-        };
+        String content;
+        switch (format.toLowerCase()) {
+            case "markdown":
+                content = generateMarkdownReport(report);
+                break;
+            case "html":
+                content = generateHtmlReport(report);
+                break;
+            default:
+                content = generateJsonReport(report);
+                break;
+        }
 
+        // 使用 FileSystemPort 的 writeFileContent 接口
         fileSystemPort.writeFileContent(outputPath, content);
-        log.info("报告已保存: {}", outputPath);
     }
 }
-

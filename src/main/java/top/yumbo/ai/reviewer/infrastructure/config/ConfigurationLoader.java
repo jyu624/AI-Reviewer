@@ -2,6 +2,7 @@ package top.yumbo.ai.reviewer.infrastructure.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,9 +123,21 @@ public class ConfigurationLoader {
             if (yaml.aiService.maxRetries != null) {
                 config.setAiMaxRetries(yaml.aiService.maxRetries);
             }
+            if (yaml.aiService.retryDelay != null) {
+                config.setAiRetryDelayMillis(yaml.aiService.retryDelay);
+            }
             if (yaml.aiService.region != null) {
                 config.setAwsRegion(yaml.aiService.region);
             }
+
+            // 将 YAML 的毫秒级超时映射到 Configuration 中的字段（如果存在）
+            if (yaml.aiService.connectTimeout != null) {
+                config.setAiConnectTimeoutMillis(yaml.aiService.connectTimeout);
+            }
+            if (yaml.aiService.readTimeout != null) {
+                config.setAiReadTimeoutMillis(yaml.aiService.readTimeout);
+            }
+            // 其余高级超时字段（writeTimeout/analyzeTimeout/batchAnalyzeTimeout）暂时不映射
         }
 
         // 文件系统配置
@@ -186,19 +199,11 @@ public class ConfigurationLoader {
 
         // AWS 配置
         String awsRegion = System.getenv("AWS_REGION");
-        if (awsRegion != null && !awsRegion.isBlank()) {
-            config.setAwsRegion(awsRegion);
-        }
-
+        if (awsRegion != null && !awsRegion.isBlank()) config.setAwsRegion(awsRegion);
         String awsAccessKeyId = System.getenv("AWS_ACCESS_KEY_ID");
-        if (awsAccessKeyId != null && !awsAccessKeyId.isBlank()) {
-            config.setAwsAccessKeyId(awsAccessKeyId);
-        }
-
+        if (awsAccessKeyId != null && !awsAccessKeyId.isBlank()) config.setAwsAccessKeyId(awsAccessKeyId);
         String awsSecretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-        if (awsSecretAccessKey != null && !awsSecretAccessKey.isBlank()) {
-            config.setAwsSecretAccessKey(awsSecretAccessKey);
-        }
+        if (awsSecretAccessKey != null && !awsSecretAccessKey.isBlank()) config.setAwsSecretAccessKey(awsSecretAccessKey);
     }
 
     /**
@@ -228,6 +233,7 @@ public class ConfigurationLoader {
      * YAML 配置映射类
      */
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class ConfigYaml {
         private AIServiceYaml aiService;
         private FileSystemYaml fileSystem;
@@ -235,6 +241,7 @@ public class ConfigurationLoader {
         private Map<String, Object> hackathon;
 
         @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class AIServiceYaml {
             private String provider;
             private String apiKey;
@@ -246,9 +253,20 @@ public class ConfigurationLoader {
             private Integer retryDelay;
             private Integer maxConcurrency;
             private String region;  // AWS region
+
+            // 新增：超时配置（毫秒）
+            private Integer connectTimeout;
+            private Integer readTimeout;
+            private Integer writeTimeout;
+            private Integer analyzeTimeout;
+            private Integer batchAnalyzeTimeout;
+
+            // 额外参数
+            private Map<String, Object> additionalParams;
         }
 
         @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class FileSystemYaml {
             private List<String> includePatterns;
             private List<String> excludePatterns;
@@ -257,6 +275,7 @@ public class ConfigurationLoader {
         }
 
         @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
         static class CacheYaml {
             private Boolean enabled;
             private String type;
@@ -265,4 +284,3 @@ public class ConfigurationLoader {
         }
     }
 }
-
