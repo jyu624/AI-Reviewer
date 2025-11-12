@@ -23,6 +23,7 @@ public class DeepSeekAIAdapter implements AIServicePort {
     private final String model;
     private final int maxTokens;
     private final double temperature;
+    AIServiceConfig config;
 
     private final ExecutorService executorService;
     private final Semaphore concurrencyLimiter;
@@ -32,6 +33,7 @@ public class DeepSeekAIAdapter implements AIServicePort {
     private final int retryDelayMillis;
 
     public DeepSeekAIAdapter(AIServiceConfig config) {
+        this.config = config;
         this.apiKey = config.apiKey();
         this.baseUrl = config.baseUrl() != null ? config.baseUrl() : "https://api.deepseek.com/v1";
         this.model = config.model() != null ? config.model() : "deepseek-chat";
@@ -74,7 +76,7 @@ public class DeepSeekAIAdapter implements AIServicePort {
     @Override
     public String analyze(String prompt) {
         try {
-            return analyzeAsync(prompt).get(60, TimeUnit.SECONDS);
+            return analyzeAsync(prompt).get(config.connectTimeoutMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("同步分析失败", e);
             throw new RuntimeException("AI分析失败: " + e.getMessage(), e);
@@ -101,8 +103,10 @@ public class DeepSeekAIAdapter implements AIServicePort {
                 log.debug("开始AI分析，提示词长度: {}, 活跃请求: {}",
                         prompt.length(), activeRequests.get());
 
+                log.info("AI分析提示词: {}", prompt);
                 String result = doAnalyzeWithRetry(prompt);
                 log.debug("AI分析完成");
+                log.info("AI分析结果: {}", result);
                 return result;
 
             } catch (Exception e) {
@@ -240,7 +244,7 @@ public class DeepSeekAIAdapter implements AIServicePort {
                 MediaType.parse("application/json"));
 
         Request request = new Request.Builder()
-                .url(baseUrl + "/chat/completions")
+                .url(baseUrl)
                 .addHeader("Authorization", "Bearer " + apiKey)
                 .addHeader("Content-Type", "application/json")
                 .post(body)

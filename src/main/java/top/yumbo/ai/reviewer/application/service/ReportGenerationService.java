@@ -46,6 +46,12 @@ public class ReportGenerationService implements ReportGenerationUseCase {
         md.append("**综合评分: ").append(report.getOverallScore()).append("/100**");
         md.append(" (").append(report.getGrade()).append(")\n\n");
 
+        // 总体评语
+        if (report.getOverallSummary() != null && !report.getOverallSummary().isBlank()) {
+            md.append("### 总体评语\n\n");
+            md.append(report.getOverallSummary()).append("\n\n");
+        }
+
         // 各维度评分
         md.append("### 评分详情\n\n");
         md.append("| 维度 | 评分 |\n");
@@ -55,6 +61,23 @@ public class ReportGenerationService implements ReportGenerationUseCase {
               .append(entry.getValue()).append("/100 |\n");
         }
         md.append("\n");
+
+        // 各维度评语
+        if (!report.getDimensionComments().isEmpty()) {
+            md.append("### 各维度评语\n\n");
+            for (var entry : report.getDimensionScores().entrySet()) {
+                String dimension = entry.getKey();
+                int score = entry.getValue();
+                String comment = report.getDimensionComment(dimension);
+
+                md.append("#### ").append(dimension).append(" (").append(score).append("/100)\n\n");
+                if (comment != null && !comment.isBlank()) {
+                    md.append(comment).append("\n\n");
+                } else {
+                    md.append("暂无评语\n\n");
+                }
+            }
+        }
 
         // 项目概览
         if (report.getProjectOverview() != null) {
@@ -143,6 +166,12 @@ public class ReportGenerationService implements ReportGenerationUseCase {
         html.append("    <p class=\"score\">").append(report.getOverallScore()).append("/100 (")
             .append(report.getGrade()).append(")</p>\n");
 
+        // 总体评语
+        if (report.getOverallSummary() != null && !report.getOverallSummary().isBlank()) {
+            html.append("    <h3>总体评语</h3>\n");
+            html.append("    <p>").append(report.getOverallSummary()).append("</p>\n");
+        }
+
         html.append("    <h2>评分详情</h2>\n");
         html.append("    <table>\n");
         html.append("        <tr><th>维度</th><th>评分</th></tr>\n");
@@ -151,6 +180,23 @@ public class ReportGenerationService implements ReportGenerationUseCase {
                 .append(entry.getValue()).append("/100</td></tr>\n");
         }
         html.append("    </table>\n");
+
+        // 各维度评语
+        if (!report.getDimensionComments().isEmpty()) {
+            html.append("    <h2>各维度评语</h2>\n");
+            for (var entry : report.getDimensionScores().entrySet()) {
+                String dimension = entry.getKey();
+                int score = entry.getValue();
+                String comment = report.getDimensionComment(dimension);
+
+                html.append("    <h3>").append(dimension).append(" (").append(score).append("/100)</h3>\n");
+                if (comment != null && !comment.isBlank()) {
+                    html.append("    <p>").append(comment).append("</p>\n");
+                } else {
+                    html.append("    <p>暂无评语</p>\n");
+                }
+            }
+        }
 
         html.append("</body>\n");
         html.append("</html>\n");
@@ -172,6 +218,11 @@ public class ReportGenerationService implements ReportGenerationUseCase {
         json.append("  \"grade\": \"").append(report.getGrade()).append("\",\n");
         json.append("  \"generatedAt\": \"").append(report.getGeneratedAt().format(DATE_FORMATTER)).append("\",\n");
 
+        // 总体评语
+        if (report.getOverallSummary() != null) {
+            json.append("  \"overallSummary\": \"").append(escapeJson(report.getOverallSummary())).append("\",\n");
+        }
+
         // 维度评分
         json.append("  \"dimensionScores\": {\n");
         int scoreCount = 0;
@@ -179,6 +230,17 @@ public class ReportGenerationService implements ReportGenerationUseCase {
             if (scoreCount > 0) json.append(",\n");
             json.append("    \"").append(escapeJson(entry.getKey())).append("\": ").append(entry.getValue());
             scoreCount++;
+        }
+        json.append("\n  },\n");
+
+        // 维度评语
+        json.append("  \"dimensionComments\": {\n");
+        int commentCount = 0;
+        for (var entry : report.getDimensionComments().entrySet()) {
+            if (commentCount > 0) json.append(",\n");
+            json.append("    \"").append(escapeJson(entry.getKey())).append("\": \"")
+                .append(escapeJson(entry.getValue())).append("\"");
+            commentCount++;
         }
         json.append("\n  },\n");
 

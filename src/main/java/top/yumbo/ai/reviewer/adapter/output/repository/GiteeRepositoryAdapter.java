@@ -1,5 +1,6 @@
 package top.yumbo.ai.reviewer.adapter.output.repository;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
@@ -62,7 +63,7 @@ public class GiteeRepositoryAdapter implements RepositoryPort {
             Git git = Git.cloneRepository()
                     .setURI(request.url())
                     .setDirectory(localPath.toFile())
-                    .setBranch(request.branch())
+                    .setBranch(StringUtils.isEmpty(request.branch()) ? null : request.branch())
                     .setDepth(cloneDepth)
                     .setTimeout(request.timeoutSeconds())
                     .call();

@@ -27,9 +27,16 @@ public class ReviewReport {
     // 总体评分
     private int overallScore;
 
+    // 总体评语
+    private String overallSummary;
+
     // 各维度评分
     @Builder.Default
     private Map<String, Integer> dimensionScores = new HashMap<>();
+
+    // 各维度评语
+    @Builder.Default
+    private Map<String, String> dimensionComments = new HashMap<>();
 
     // 分析结果
     private String projectOverview;
@@ -63,6 +70,22 @@ public class ReviewReport {
      */
     public int getDimensionScore(String dimension) {
         return dimensionScores.getOrDefault(dimension, 0);
+    }
+
+    /**
+     * 添加维度评语
+     */
+    public void addDimensionComment(String dimension, String comment) {
+        if (comment != null && !comment.isBlank()) {
+            dimensionComments.put(dimension, comment);
+        }
+    }
+
+    /**
+     * 获取维度评语
+     */
+    public String getDimensionComment(String dimension) {
+        return dimensionComments.getOrDefault(dimension, "");
     }
 
     /**

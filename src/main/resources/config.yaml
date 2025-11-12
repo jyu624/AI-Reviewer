@@ -6,7 +6,7 @@
 # =============================================================================
 aiService:
   provider: "deepseek"  # 支持: deepseek, openai, gemini, claude, bedrock
-  apiKey: "sk-1c780a5ae9c94d63861d90d5d1930481"  # 环境变量或直接配置
+#  apiKey: "sk-1c780a5ae9c94d63861d90d5d1930481"  # 环境变量或直接配置
   baseUrl: "https://api.deepseek.com/v1/chat/completions"
 #  model: "deepseek-chat"
 #  baseUrl: "http://localhost:11434/api/chat"

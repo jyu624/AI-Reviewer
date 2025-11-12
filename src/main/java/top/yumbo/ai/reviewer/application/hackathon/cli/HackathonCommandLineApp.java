@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
+import top.yumbo.ai.reviewer.adapter.output.repository.GitHubRepositoryAdapter;
 import top.yumbo.ai.reviewer.adapter.output.repository.GiteeRepositoryAdapter;
 import top.yumbo.ai.reviewer.application.hackathon.service.HackathonIntegrationService;
 import top.yumbo.ai.reviewer.application.port.output.CloneRequest;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -155,10 +157,9 @@ public class HackathonCommandLineApp {
         System.out.println("正在克隆项目: " + args.gitUrl());
         RepositoryPort repoPort = detectGitRepositoryAdapter(args.gitUrl());
 
-        String branch = args.branch() != null ? args.branch() : "main";
         CloneRequest cloneRequest = CloneRequest.builder()
                 .url(args.gitUrl())
-                .branch(branch)
+                .branch(args.branch())
                 .timeoutSeconds(300)
                 .build();
 
@@ -216,9 +217,22 @@ public class HackathonCommandLineApp {
         System.out.println("\n=== 黑客松评审结果 ===");
         System.out.println("团队: " + args.team());
         System.out.println("总体评分: " + report.getOverallScore() + "/100 (" + report.getGrade() + ")");
+
+        // 显示总体评语
+        if (report.getOverallSummary() != null && !report.getOverallSummary().isBlank()) {
+            System.out.println("\n总体评语:");
+            System.out.println(report.getOverallSummary());
+        }
+
         System.out.println("\n各维度评分:");
-        report.getDimensionScores().forEach((dimension, score) ->
-                System.out.println("  - " + dimension + ": " + score + "/100"));
+        report.getDimensionScores().forEach((dimension, score) -> {
+            System.out.println("  - " + dimension + ": " + score + "/100");
+            // 显示维度评语
+            String comment = report.getDimensionComment(dimension);
+            if (comment != null && !comment.isBlank()) {
+                System.out.println("    评语: " + comment);
+            }
+        });
 
         // 生成黑客松评分
         HackathonScore hackathonScore = calculateHackathonScore(report);
@@ -285,8 +299,18 @@ public class HackathonCommandLineApp {
      */
     private RepositoryPort detectGitRepositoryAdapter(String url) {
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"), "hackathon-repos");
-        // TODO: 根据URL自动选择 GitHubRepositoryAdapter 或 GiteeRepositoryAdapter
-        return new GiteeRepositoryAdapter(tempDir);
+
+        // 根据URL自动选择对应的仓库适配器
+        if (url.contains("github.com")) {
+            log.info("检测到 GitHub 仓库: {}", url);
+            return new GitHubRepositoryAdapter(tempDir);
+        } else if (url.contains("gitee.com")) {
+            log.info("检测到 Gitee 仓库: {}", url);
+            return new GiteeRepositoryAdapter(tempDir);
+        } else {
+            log.warn("无法识别仓库类型，默认使用 Gitee 适配器: {}", url);
+            return new GiteeRepositoryAdapter(tempDir);
+        }
     }
 
     /**
@@ -351,7 +375,7 @@ public class HackathonCommandLineApp {
         String giteeUrl = null;
         String directory = null;
         String team = "Unknown Team";
-        String branch = "main";
+        String branch = "";
         String output = null;
         String report = null;
 
@@ -431,6 +455,7 @@ public class HackathonCommandLineApp {
             String branch,
             String output,
             String report
-    ) {}
+    ) {
+    }
 }
 
