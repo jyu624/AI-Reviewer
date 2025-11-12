@@ -1,6 +1,7 @@
 package top.yumbo.ai.reviewer.adapter.input.api;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yumbo.ai.reviewer.adapter.output.ai.AIServiceConfig;
 import top.yumbo.ai.reviewer.adapter.output.ai.DeepSeekAIAdapter;
 import top.yumbo.ai.reviewer.adapter.output.cache.FileCacheAdapter;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
@@ -195,12 +196,9 @@ public class APIAdapter {
 
     private DeepSeekAIAdapter createDefaultAIAdapter() {
         String apiKey = System.getenv("DEEPSEEK_API_KEY");
-        if (apiKey == null) {
-            apiKey = "sk-1c780a5ae9c94d63861d90d5d1930481";
-        }
 
-        return new DeepSeekAIAdapter(new DeepSeekAIAdapter.AIServiceConfig(
-                apiKey, null, null, 4000, 0.3, 3, 3, 1000, 30000, 60000
+        return new DeepSeekAIAdapter(new AIServiceConfig(
+                apiKey, null, null, 4000, 0.3, 3, 3, 1000, 30000, 60000, null
         ));
     }
 

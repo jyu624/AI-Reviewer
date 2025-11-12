@@ -276,20 +276,5 @@ public class DeepSeekAIAdapter implements AIServicePort {
         }
     }
 
-    /**
-     * AI服务配置
-     */
-    public record AIServiceConfig(
-            String apiKey,
-            String baseUrl,
-            String model,
-            int maxTokens,
-            double temperature,
-            int maxConcurrency,
-            int maxRetries,
-            int retryDelayMillis,
-            int connectTimeoutMillis,
-            int readTimeoutMillis
-    ) {}
 }
 

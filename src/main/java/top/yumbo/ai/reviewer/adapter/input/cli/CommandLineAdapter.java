@@ -1,6 +1,7 @@
 package top.yumbo.ai.reviewer.adapter.input.cli;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yumbo.ai.reviewer.adapter.output.ai.AIServiceConfig;
 import top.yumbo.ai.reviewer.adapter.output.ai.DeepSeekAIAdapter;
 import top.yumbo.ai.reviewer.adapter.output.cache.FileCacheAdapter;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
@@ -223,11 +224,8 @@ public class CommandLineAdapter {
     private DeepSeekAIAdapter createAIAdapter() {
         // 从环境变量或配置文件读取
         String apiKey = System.getenv("DEEPSEEK_API_KEY");
-        if (apiKey == null) {
-            apiKey = "sk-1c780a5ae9c94d63861d90d5d1930481"; // 默认密钥
-        }
 
-        return new DeepSeekAIAdapter(new DeepSeekAIAdapter.AIServiceConfig(
+        return new DeepSeekAIAdapter(new AIServiceConfig(
                 apiKey,
                 "https://api.deepseek.com/v1",
                 "deepseek-chat",
@@ -237,7 +235,8 @@ public class CommandLineAdapter {
                 3,
                 1000,
                 30000,
-                60000
+                60000,
+                null  // region
         ));
     }
 

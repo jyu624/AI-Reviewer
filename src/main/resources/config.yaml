@@ -5,7 +5,7 @@
 # AI服务配置
 # =============================================================================
 aiService:
-  provider: "deepseek"  # deepseek, openai, etc.
+  provider: "deepseek"  # 支持: deepseek, openai, gemini, claude, bedrock
   apiKey: "sk-1c780a5ae9c94d63861d90d5d1930481"  # 环境变量或直接配置
   baseUrl: "https://api.deepseek.com/v1/chat/completions"
 #  model: "deepseek-chat"
@@ -13,6 +13,18 @@ aiService:
   model: "deepseek-chat"
   maxTokens: 8000
   temperature: 0
+
+  # AWS Bedrock 配置 (当 provider 为 bedrock 时)
+  # apiKey 格式: "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY"
+  # 或使用 AWS 默认凭证链（不配置 apiKey）
+  region: "us-east-1"  # AWS 区域
+  # 支持的模型:
+  # - anthropic.claude-v2 (Claude)
+  # - anthropic.claude-3-sonnet-20240229-v1:0 (Claude 3)
+  # - amazon.titan-text-express-v1 (Titan)
+  # - meta.llama2-13b-chat-v1 (Llama 2)
+  # - cohere.command-text-v14 (Cohere)
+  # - ai21.j2-mid-v1 (AI21 Jurassic)
 
   # 超时配置 (毫秒) - Hackathon专用优化
   connectTimeout: 300000    # 连接超时: 300秒
