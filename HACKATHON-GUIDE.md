@@ -41,8 +41,16 @@ cd ai-reviewer
 mvn clean compile -DskipTests
 
 # 3. 评审单个项目（示例）
+
+# 评审 GitHub 项目
 java -jar target/ai-reviewer.jar hackathon \
   --github-url https://github.com/user/hackathon-project \
+  --team "Team Awesome" \
+  --output score.json
+
+# 评审 Gitee 项目
+java -jar target/ai-reviewer.jar hackathon \
+  --gitee-url https://gitee.com/user/hackathon-project \
   --team "Team Awesome" \
   --output score.json
 
@@ -259,6 +267,7 @@ done < projects.txt
 
 #### 方式 1: 命令行（推荐）
 
+**评审 GitHub 项目**:
 ```bash
 java -jar ai-reviewer.jar hackathon \
   --github-url https://github.com/team1/project1 \
@@ -267,6 +276,25 @@ java -jar ai-reviewer.jar hackathon \
   --output team1-score.json \
   --report team1-report.md
 ```
+
+**评审 Gitee 项目**:
+```bash
+java -jar ai-reviewer.jar hackathon \
+  --gitee-url https://gitee.com/team1/project1 \
+  --team "Team Alpha" \
+  --members "张三,李四,王五" \
+  --output team1-score.json \
+  --report team1-report.md
+```
+
+**参数说明**:
+- `--github-url`: GitHub 仓库 URL（与 `--gitee-url` 二选一）
+- `--gitee-url`: Gitee 仓库 URL（与 `--github-url` 二选一）
+- `--team`: 团队名称
+- `--members`: 成员列表（逗号分隔）
+- `--output`: 评分结果输出文件（JSON 格式）
+- `--report`: 详细报告输出文件（Markdown 格式）
+- `--fast-mode`: 启用快速模式（可选）
 
 #### 方式 2: Java 代码
 
@@ -336,9 +364,19 @@ while IFS='|' read -r url team members; do
   # 提取项目名
   project_name=$(basename "$url" .git)
   
+  # 判断是 GitHub 还是 Gitee
+  if [[ "$url" == *"github.com"* ]]; then
+    url_param="--github-url"
+  elif [[ "$url" == *"gitee.com"* ]]; then
+    url_param="--gitee-url"
+  else
+    echo "❌ 不支持的仓库平台: $url"
+    continue
+  fi
+  
   # 执行评审
   java -jar ai-reviewer.jar hackathon \
-    --github-url "$url" \
+    $url_param "$url" \
     --team "$team" \
     --members "$members" \
     --output "scores/${project_name}-score.json" \
@@ -1065,8 +1103,11 @@ git push origin feature/hackathon-improvements
 ### B. 常用命令速查
 
 ```bash
-# 快速评审单项目
+# 快速评审 GitHub 项目
 java -jar ai-reviewer.jar hackathon --github-url URL --team NAME
+
+# 快速评审 Gitee 项目
+java -jar ai-reviewer.jar hackathon --gitee-url URL --team NAME
 
 # 批量评审
 ./batch-review.sh

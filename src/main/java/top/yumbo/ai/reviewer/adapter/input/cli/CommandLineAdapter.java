@@ -180,7 +180,7 @@ public class CommandLineAdapter {
      */
     private void printUsage() {
         System.out.println("AI Reviewer - 六边形架构重构版");
-        System.out.println("\n用法: java -jar ai-reviewer-reviewer.jar [选项]");
+        System.out.println("\n用法: java -jar ai-reviewer-2.0.jar [选项]");
         System.out.println("\n选项:");
         System.out.println("  -p, --project <路径>    要分析的项目根目录路径 (必需)");
         System.out.println("  -o, --output <文件>     输出报告的文件路径 (可选)");
@@ -188,9 +188,9 @@ public class CommandLineAdapter {
         System.out.println("  -a, --async             异步执行分析");
         System.out.println("  -h, --help              显示此帮助信息");
         System.out.println("\n示例:");
-        System.out.println("  java -jar ai-reviewer-reviewer.jar --project /path/to/project");
-        System.out.println("  java -jar ai-reviewer-reviewer.jar -p . -o report.md -f markdown");
-        System.out.println("  java -jar ai-reviewer-reviewer.jar -p /project -a -o report.html -f html");
+        System.out.println("  java -jar ai-reviewer-2.0.jar --project /path/to/project");
+        System.out.println("  java -jar ai-reviewer-2.0.jar -p . -o report.md -f markdown");
+        System.out.println("  java -jar ai-reviewer-2.0.jar -p /project -a -o report.html -f html");
     }
 
     /**

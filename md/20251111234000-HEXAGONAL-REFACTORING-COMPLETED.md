@@ -296,13 +296,13 @@ public void put(String key, String value, long ttlSeconds) {
 
 ```bash
 # 同步分析
-java -jar ai-reviewer-reviewer.jar --project /path/to/project
+java -jar ai-reviewer-2.0.jar --project /path/to/project
 
 # 异步分析，保存报告
-java -jar ai-reviewer-reviewer.jar -p /project -a -o report.md
+java -jar ai-reviewer-2.0.jar -p /project -a -o report.md
 
 # 生成HTML报告
-java -jar ai-reviewer-reviewer.jar -p . -f html -o report.html
+java -jar ai-reviewer-2.0.jar -p . -f html -o report.html
 ```
 
 ### 2. API编程使用

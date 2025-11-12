@@ -1,0 +1,1 @@
+mvn clean package -Dmaven.test.skip=true -f hackathon-dependency-reduced-pom.xml
