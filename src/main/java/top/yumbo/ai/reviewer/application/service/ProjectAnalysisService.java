@@ -4,9 +4,12 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.application.port.input.ProjectAnalysisUseCase;
 import top.yumbo.ai.reviewer.application.port.output.AIServicePort;
+import top.yumbo.ai.reviewer.application.port.output.ASTParserPort;
 import top.yumbo.ai.reviewer.application.port.output.CachePort;
 import top.yumbo.ai.reviewer.application.port.output.FileSystemPort;
+import top.yumbo.ai.reviewer.application.service.prompt.AIPromptBuilder;
 import top.yumbo.ai.reviewer.domain.model.*;
+import top.yumbo.ai.reviewer.domain.model.ast.CodeInsight;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +26,8 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
     private final AIServicePort aiServicePort;
     private final CachePort cachePort;
     private final FileSystemPort fileSystemPort;
+    private final ASTParserPort astParserPort;  // AST解析器
+    private final AIPromptBuilder promptBuilder;  // 提示词构建器
 
     // 任务存储
     private final Map<String, AnalysisTask> tasks = new ConcurrentHashMap<>();
@@ -32,10 +37,21 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
     public ProjectAnalysisService(
             AIServicePort aiServicePort,
             CachePort cachePort,
-            FileSystemPort fileSystemPort) {
+            FileSystemPort fileSystemPort,
+            ASTParserPort astParserPort) {
         this.aiServicePort = aiServicePort;
         this.cachePort = cachePort;
         this.fileSystemPort = fileSystemPort;
+        this.astParserPort = astParserPort;
+        this.promptBuilder = new AIPromptBuilder();
+    }
+
+    // 兼容旧的构造函数（不使用AST）
+    public ProjectAnalysisService(
+            AIServicePort aiServicePort,
+            CachePort cachePort,
+            FileSystemPort fileSystemPort) {
+        this(aiServicePort, cachePort, fileSystemPort, null);
     }
 
     @Override
@@ -207,7 +223,7 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
     }
 
     /**
-     * 分析项目概览
+     * 分析项目概览（增强版 - 使用AST）
      */
     private String analyzeProjectOverview(Project project) {
         String cacheKey = "overview:" + project.getName();
@@ -220,6 +236,36 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
         }
 
         // 构建提示词
+        String prompt;
+
+        // 如果有AST解析器且支持该项目类型，使用增强版提示词
+        if (astParserPort != null && astParserPort.supports(project.getType().name())) {
+            try {
+                log.info("使用AST增强分析: {}", project.getName());
+                CodeInsight codeInsight = astParserPort.parseProject(project);
+                prompt = promptBuilder.buildEnhancedPrompt(project, codeInsight);
+            } catch (Exception e) {
+                log.warn("AST解析失败，降级到基础分析: {}", e.getMessage());
+                prompt = buildBasicPrompt(project);
+            }
+        } else {
+            // 使用基础提示词
+            prompt = buildBasicPrompt(project);
+        }
+
+        // 调用AI服务
+        String result = aiServicePort.analyze(prompt.toString());
+
+        // 缓存结果
+        cachePort.put(cacheKey, result, 3600); // 1小时
+
+        return result;
+    }
+
+    /**
+     * 构建基础提示词（不使用AST）
+     */
+    private String buildBasicPrompt(Project project) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("请分析以下项目的整体情况：\n\n");
         prompt.append("项目名称: ").append(project.getName()).append("\n");
@@ -231,14 +277,7 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
         prompt.append("1. 项目的核心功能（1-2句话）\n");
         prompt.append("2. 使用的主要技术栈\n");
         prompt.append("3. 项目的整体架构风格\n");
-
-        // 调用AI服务
-        String result = aiServicePort.analyze(prompt.toString());
-
-        // 缓存结果
-        cachePort.put(cacheKey, result, 3600); // 1小时
-
-        return result;
+        return prompt.toString();
     }
 
     /**

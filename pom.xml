@@ -111,6 +111,13 @@
             <version>4.13.1</version>
         </dependency>
 
+        <!-- JavaParser for Java AST analysis -->
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-symbol-solver-core</artifactId>
+            <version>3.25.7</version>
+        </dependency>
+
         <!-- Apache Tika for file type detection -->
         <dependency>
             <groupId>org.apache.tika</groupId>
