@@ -15,7 +15,7 @@
 
 **错误位置**:
 - `JavaScriptParserAdapter.java:633`
-- `MultiLanguageASTExample.java:180, 215`
+- `top.yumbo.ai.reviewer.MultiLanguageASTExample.java:180, 215`
 
 **错误信息**:
 ```

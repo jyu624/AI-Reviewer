@@ -17,7 +17,9 @@ aiService:
   # AWS Bedrock 配置 (当 provider 为 bedrock 时)
   # apiKey 格式: "AWS_ACCESS_KEY_ID:AWS_SECRET_ACCESS_KEY"
   # 或使用 AWS 默认凭证链（不配置 apiKey）
-  region: "us-east-1"  # AWS 区域
+#  provider: "bedrock"
+#  model: "arn:aws:bedrock:us-east-1:590184013141:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+#  region: "us-east-1"  # AWS 区域
   # 支持的模型:
   # - anthropic.claude-v2 (Claude)
   # - anthropic.claude-3-sonnet-20240229-v1:0 (Claude 3)

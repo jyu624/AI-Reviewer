@@ -43,7 +43,7 @@ CodeInsight insight = javaParser.parseProject(javaProject);
 
 ```bash
 # 多语言示例
-mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.MultiLanguageASTExample"
+mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.top.yumbo.ai.reviewer.MultiLanguageASTExample"
 
 # Java示例（原有）
 mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.ASTAnalysisExample"

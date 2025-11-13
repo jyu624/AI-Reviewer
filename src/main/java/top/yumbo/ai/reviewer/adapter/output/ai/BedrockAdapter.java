@@ -216,7 +216,8 @@ public class BedrockAdapter implements AIServicePort {
     private String buildRequestBody(String prompt) {
         JSONObject requestBody = new JSONObject();
 
-        if (modelId.startsWith("anthropic.claude")) {
+        // 支持 ARN 格式的 model ID（例如：arn:aws:bedrock:us-east-1:xxx:inference-profile/us.anthropic.claude-xxx）
+        if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude")) {
             // Claude 模型格式
             requestBody.put("prompt", "\n\nHuman: " + prompt + "\n\nAssistant:");
             requestBody.put("max_tokens_to_sample", maxTokens);
@@ -224,7 +225,7 @@ public class BedrockAdapter implements AIServicePort {
             requestBody.put("top_p", 0.9);
             requestBody.put("stop_sequences", new String[]{"\n\nHuman:"});
 
-        } else if (modelId.startsWith("amazon.titan")) {
+        } else if (modelId.contains("amazon.titan") || modelId.startsWith("amazon.titan")) {
             // Titan 模型格式
             JSONObject textGenerationConfig = new JSONObject();
             textGenerationConfig.put("maxTokenCount", maxTokens);
@@ -234,21 +235,21 @@ public class BedrockAdapter implements AIServicePort {
             requestBody.put("inputText", prompt);
             requestBody.put("textGenerationConfig", textGenerationConfig);
 
-        } else if (modelId.startsWith("meta.llama")) {
+        } else if (modelId.contains("meta.llama") || modelId.startsWith("meta.llama")) {
             // Llama 模型格式
             requestBody.put("prompt", prompt);
             requestBody.put("max_gen_len", maxTokens);
             requestBody.put("temperature", temperature);
             requestBody.put("top_p", 0.9);
 
-        } else if (modelId.startsWith("cohere.command")) {
+        } else if (modelId.contains("cohere.command") || modelId.startsWith("cohere.command")) {
             // Cohere 模型格式
             requestBody.put("prompt", prompt);
             requestBody.put("max_tokens", maxTokens);
             requestBody.put("temperature", temperature);
             requestBody.put("p", 0.9);
 
-        } else if (modelId.startsWith("ai21.j2")) {
+        } else if (modelId.contains("ai21.j2") || modelId.startsWith("ai21.j2")) {
             // AI21 Jurassic 模型格式
             requestBody.put("prompt", prompt);
             requestBody.put("maxTokens", maxTokens);
@@ -272,27 +273,28 @@ public class BedrockAdapter implements AIServicePort {
         try {
             JSONObject response = JSON.parseObject(responseBody);
 
-            if (modelId.startsWith("anthropic.claude")) {
+            // 支持 ARN 格式的 model ID
+            if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude")) {
                 // Claude 响应格式
                 return response.getString("completion");
 
-            } else if (modelId.startsWith("amazon.titan")) {
+            } else if (modelId.contains("amazon.titan") || modelId.startsWith("amazon.titan")) {
                 // Titan 响应格式
                 return response.getJSONArray("results")
                         .getJSONObject(0)
                         .getString("outputText");
 
-            } else if (modelId.startsWith("meta.llama")) {
+            } else if (modelId.contains("meta.llama") || modelId.startsWith("meta.llama")) {
                 // Llama 响应格式
                 return response.getString("generation");
 
-            } else if (modelId.startsWith("cohere.command")) {
+            } else if (modelId.contains("cohere.command") || modelId.startsWith("cohere.command")) {
                 // Cohere 响应格式
                 return response.getJSONArray("generations")
                         .getJSONObject(0)
                         .getString("text");
 
-            } else if (modelId.startsWith("ai21.j2")) {
+            } else if (modelId.contains("ai21.j2") || modelId.startsWith("ai21.j2")) {
                 // AI21 响应格式
                 return response.getJSONArray("completions")
                         .getJSONObject(0)

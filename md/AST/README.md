@@ -44,7 +44,7 @@ System.out.println("设计模式: " + insight.getDesignPatterns().getPatterns().
 mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.CompleteLanguageExample"
 
 # Python + JavaScript示例
-mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.MultiLanguageASTExample"
+mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.top.yumbo.ai.reviewer.MultiLanguageASTExample"
 
 # Java示例
 mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.ASTAnalysisExample"
@@ -141,7 +141,7 @@ src/main/java/.../domain/model/ast/
 
 示例程序:
 ├── ASTAnalysisExample.java         (Java示例)
-├── MultiLanguageASTExample.java    (Python+JS示例)
+├── top.yumbo.ai.reviewer.MultiLanguageASTExample.java    (Python+JS示例)
 └── CompleteLanguageExample.java    (Go+C++示例)
 ```
 

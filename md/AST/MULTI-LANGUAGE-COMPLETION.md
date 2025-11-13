@@ -123,7 +123,7 @@ List<String> types = factory.getSupportedTypes();
 - ✅ `AST-QUICKSTART.md` - 更新了多语言示例
 
 **示例程序**:
-- ✅ `MultiLanguageASTExample.java` - 完整的多语言演示
+- ✅ `top.yumbo.ai.reviewer.MultiLanguageASTExample.java` - 完整的多语言演示
 
 ---
 
@@ -300,7 +300,7 @@ insights.forEach((lang, insight) -> {
 ### 运行多语言示例
 
 ```bash
-mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.MultiLanguageASTExample"
+mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.top.yumbo.ai.reviewer.MultiLanguageASTExample"
 ```
 
 **预期输出**:
@@ -382,7 +382,7 @@ Java项目          : ✅ 支持
 - [x] `PythonParserAdapter.java` (578行)
 - [x] `JavaScriptParserAdapter.java` (672行)
 - [x] `ASTParserFactory.java` (106行)
-- [x] `MultiLanguageASTExample.java` (示例程序)
+- [x] `top.yumbo.ai.reviewer.MultiLanguageASTExample.java` (示例程序)
 
 **新增代码**: ~1,500行
 

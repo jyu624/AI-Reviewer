@@ -27,7 +27,7 @@
 - **功能**: 自动选择解析器、统一接口、可扩展
 
 ### 4. **示例程序** ✅
-- **文件**: `MultiLanguageASTExample.java`
+- **文件**: `top.yumbo.ai.reviewer.MultiLanguageASTExample.java`
 - **功能**: 演示Python和JavaScript项目分析
 
 ### 5. **完整文档** ✅
@@ -89,7 +89,7 @@ CodeInsight jsInsight = jsParser.parseProject(jsProject);
 ### 运行示例程序
 
 ```bash
-mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.MultiLanguageASTExample"
+mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.top.yumbo.ai.reviewer.MultiLanguageASTExample"
 ```
 
 **输出**:
@@ -129,7 +129,7 @@ mvn exec:java -Dexec.mainClass="top.yumbo.ai.reviewer.MultiLanguageASTExample"
 - [x] `PythonParserAdapter.java` (578行) ✅
 - [x] `JavaScriptParserAdapter.java` (672行) ✅
 - [x] `ASTParserFactory.java` (106行) ✅
-- [x] `MultiLanguageASTExample.java` (示例) ✅
+- [x] `top.yumbo.ai.reviewer.MultiLanguageASTExample.java` (示例) ✅
 
 **新增代码**: ~1,500行
 
@@ -283,7 +283,7 @@ CodeInsight insight = factory.parseProject(goProject);
 - 📊 [实现报告](AST-IMPLEMENTATION-REPORT.md)
 
 ### 示例代码
-- 💻 `MultiLanguageASTExample.java` - 完整示例
+- 💻 `top.yumbo.ai.reviewer.MultiLanguageASTExample.java` - 完整示例
 - 🧪 测试用例 - 参考示例程序
 
 ---
