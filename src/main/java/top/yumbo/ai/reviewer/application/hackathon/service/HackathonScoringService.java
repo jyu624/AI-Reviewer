@@ -1,23 +1,36 @@
 package top.yumbo.ai.reviewer.application.hackathon.service;
 
+import lombok.extern.slf4j.Slf4j;
+import top.yumbo.ai.reviewer.adapter.output.ast.parser.ASTParserFactory;
+import top.yumbo.ai.reviewer.application.port.output.ASTParserPort;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ReviewReport;
 import top.yumbo.ai.reviewer.domain.model.SourceFile;
+import top.yumbo.ai.reviewer.domain.model.ast.CodeInsight;
+import top.yumbo.ai.reviewer.domain.model.ast.CodeSmell;
+import top.yumbo.ai.reviewer.domain.model.ast.ComplexityMetrics;
+import top.yumbo.ai.reviewer.domain.model.ast.DesignPattern;
 
 import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * 黑客松评分服务
+ * 黑客松评分服务（AST增强版）
  *
  * 负责将核心框架的评审报告转换为黑客松专属的四维度评分
  *
+ * v2.0 更新：集成AST解析器，基于实际代码结构进行精准评分
+ *
  * @author AI-Reviewer Team
- * @version 1.0
+ * @version 2.0
  * @since 2025-11-12
  */
+@Slf4j
 public class HackathonScoringService {
+
+    // AST解析器工厂
+    private final ASTParserPort astParser;
 
     // 创新技术关键词
     private static final List<String> INNOVATION_KEYWORDS = List.of(
@@ -26,6 +39,22 @@ public class HackathonScoringService {
         "Kubernetes", "Docker", "React", "Vue3", "Next.js"
     );
 
+    /**
+     * 构造函数
+     */
+    public HackathonScoringService() {
+        this.astParser = new ASTParserFactory();
+        log.info("黑客松评分服务初始化完成（AST增强版）");
+    }
+
+    /**
+     * 构造函数（支持依赖注入）
+     */
+    public HackathonScoringService(ASTParserPort astParser) {
+        this.astParser = astParser;
+        log.info("黑客松评分服务初始化完成（自定义AST解析器）");
+    }
+
     // README 质量评分正则
     private static final Pattern README_SECTIONS = Pattern.compile(
         "(简介|Introduction|功能|Features|安装|Installation|使用|Usage|API|文档|Documentation)",
@@ -33,7 +62,7 @@ public class HackathonScoringService {
     );
 
     /**
-     * 计算黑客松综合评分
+     * 计算黑客松综合评分（AST增强版）
      *
      * @param reviewReport 核心评审报告
      * @param project 项目信息
@@ -44,50 +73,240 @@ public class HackathonScoringService {
             throw new IllegalArgumentException("评审报告和项目信息不能为空");
         }
 
-        int codeQuality = calculateCodeQuality(reviewReport);
-        int innovation = calculateInnovation(reviewReport, project);
-        int completeness = calculateCompleteness(reviewReport, project);
+        log.info("开始计算黑客松评分: {}", project.getName());
+
+        // 尝试使用AST解析获取代码洞察
+        CodeInsight codeInsight = null;
+        try {
+            if (astParser.supports(project.getType().name())) {
+                log.info("使用AST解析器分析项目: {}", project.getType());
+                codeInsight = astParser.parseProject(project);
+                log.info("AST解析完成: 类数={}, 方法数={}",
+                    codeInsight.getClasses().size(),
+                    codeInsight.getStatistics() != null ? codeInsight.getStatistics().getTotalMethods() : 0);
+            } else {
+                log.info("项目类型 {} 不支持AST解析，使用基础评分", project.getType());
+            }
+        } catch (Exception e) {
+            log.warn("AST解析失败，降级到基础评分: {}", e.getMessage());
+            codeInsight = null;
+        }
+
+        // 使用AST增强的评分逻辑
+        int codeQuality = calculateCodeQualityWithAST(reviewReport, codeInsight);
+        int innovation = calculateInnovationWithAST(reviewReport, project, codeInsight);
+        int completeness = calculateCompletenessWithAST(reviewReport, project, codeInsight);
         int documentation = calculateDocumentation(project);
 
-        return HackathonScore.builder()
+        HackathonScore score = HackathonScore.builder()
             .codeQuality(codeQuality)
             .innovation(innovation)
             .completeness(completeness)
             .documentation(documentation)
             .build();
+
+        log.info("评分完成: 代码质量={}, 创新性={}, 完成度={}, 文档={}, 总分={}",
+            codeQuality, innovation, completeness, documentation, score.getTotalScore());
+
+        return score;
     }
 
     /**
-     * 计算代码质量分数 (0-100)
+     * 计算代码质量分数 (0-100) - AST增强版
      *
-     * 直接使用核心框架的 overallScore
+     * 评分维度：
+     * 1. 基础质量（核心框架评分）40%
+     * 2. 复杂度控制 30%
+     * 3. 代码坏味道 20%
+     * 4. 架构设计 10%
      */
-    private int calculateCodeQuality(ReviewReport reviewReport) {
-        // 核心框架的 overallScore 已经是 0-100
-        return reviewReport.getOverallScore();
+    private int calculateCodeQualityWithAST(ReviewReport reviewReport, CodeInsight codeInsight) {
+        // 基础分数（来自核心框架）
+        int baseScore = reviewReport.getOverallScore();
+
+        // 如果没有AST分析，直接返回基础分数
+        if (codeInsight == null) {
+            return baseScore;
+        }
+
+        // 1. 基础质量 (40%)
+        int baseQualityScore = (int) (baseScore * 0.4);
+
+        // 2. 复杂度控制 (30%)
+        int complexityScore = calculateComplexityScore(codeInsight);
+
+        // 3. 代码坏味道 (20%)
+        int codeSmellScore = calculateCodeSmellScore(codeInsight);
+
+        // 4. 架构设计 (10%)
+        int architectureScore = calculateArchitectureScore(codeInsight);
+
+        int totalScore = baseQualityScore + complexityScore + codeSmellScore + architectureScore;
+
+        log.debug("代码质量评分明细: 基础={}, 复杂度={}, 坏味道={}, 架构={}, 总计={}",
+            baseQualityScore, complexityScore, codeSmellScore, architectureScore, totalScore);
+
+        return Math.min(100, totalScore);
     }
 
     /**
-     * 计算创新性分数 (0-100)
+     * 计算复杂度得分 (0-30)
+     */
+    private int calculateComplexityScore(CodeInsight codeInsight) {
+        ComplexityMetrics metrics = codeInsight.getComplexityMetrics();
+        if (metrics == null) {
+            return 15; // 默认中等分数
+        }
+
+        int score = 30; // 满分
+
+        // 平均圈复杂度评分
+        double avgComplexity = metrics.getAvgCyclomaticComplexity();
+        if (avgComplexity > 15) {
+            score -= 15; // 很差
+        } else if (avgComplexity > 10) {
+            score -= 10; // 较差
+        } else if (avgComplexity > 7) {
+            score -= 5;  // 中等
+        } else if (avgComplexity > 5) {
+            score -= 2;  // 良好
+        }
+        // 否则保持满分（优秀）
+
+        // 高复杂度方法数量扣分
+        int highComplexityCount = metrics.getHighComplexityMethodCount();
+        int totalMethods = metrics.getTotalMethods();
+        if (totalMethods > 0) {
+            double highComplexityRatio = (double) highComplexityCount / totalMethods;
+            if (highComplexityRatio > 0.3) {
+                score -= 10; // 超过30%的方法复杂度高
+            } else if (highComplexityRatio > 0.15) {
+                score -= 5;  // 超过15%的方法复杂度高
+            }
+        }
+
+        return Math.max(0, score);
+    }
+
+    /**
+     * 计算代码坏味道得分 (0-20)
+     */
+    private int calculateCodeSmellScore(CodeInsight codeInsight) {
+        List<CodeSmell> smells = codeInsight.getCodeSmells();
+        if (smells == null || smells.isEmpty()) {
+            return 20; // 无坏味道，满分
+        }
+
+        double score = 20.0;
+
+        // 根据严重程度扣分
+        for (CodeSmell smell : smells) {
+            switch (smell.getSeverity()) {
+                case CRITICAL -> score -= 3;
+                case HIGH -> score -= 2;
+                case MEDIUM -> score -= 1;
+                case LOW -> score -= 0.5;
+            }
+        }
+
+        return Math.max(0, (int) Math.round(score));
+    }
+
+    /**
+     * 计算架构设计得分 (0-10)
+     */
+    private int calculateArchitectureScore(CodeInsight codeInsight) {
+        if (codeInsight.getStructure() == null) {
+            return 5; // 默认中等分数
+        }
+
+        String architecture = codeInsight.getStructure().getArchitectureStyle();
+
+        // 根据架构风格评分
+        if (architecture != null) {
+            if (architecture.contains("六边形") || architecture.contains("Hexagonal")) {
+                return 10; // 六边形架构，满分
+            } else if (architecture.contains("分层") || architecture.contains("Layered")) {
+                return 8; // 分层架构，良好
+            } else if (architecture.contains("微服务") || architecture.contains("Microservice")) {
+                return 9; // 微服务架构，优秀
+            }
+        }
+
+        // 检查设计模式使用
+        if (codeInsight.getDesignPatterns() != null &&
+            !codeInsight.getDesignPatterns().getPatterns().isEmpty()) {
+            return 7; // 使用了设计模式，较好
+        }
+
+        return 5; // 默认分数
+    }
+
+    /**
+     * 计算创新性分数 (0-100) - AST增强版
      *
      * 评估维度：
-     * 1. 使用的新技术栈 (40%)
-     * 2. AI 分析的创新性评价 (40%)
-     * 3. 项目的独特性 (20%)
+     * 1. 使用的新技术栈 30%
+     * 2. 设计模式创新性 30%
+     * 3. AI 分析的创新性评价 25%
+     * 4. 项目的独特性 15%
      */
-    private int calculateInnovation(ReviewReport reviewReport, Project project) {
-        // 1. 技术栈创新性评分 (0-40)
+    private int calculateInnovationWithAST(ReviewReport reviewReport, Project project, CodeInsight codeInsight) {
+        // 1. 技术栈创新性评分 (0-30)
         int techStackScore = calculateTechStackInnovation(project);
+        techStackScore = (int) (techStackScore * 0.75); // 调整为30分制
 
-        // 2. AI 评价创新性 (0-40)
-        // 从关键发现中提取创新性评价
+        // 2. 设计模式创新性 (0-30)
+        int designPatternScore = calculateDesignPatternInnovation(codeInsight);
+
+        // 3. AI 评价创新性 (0-25)
         int aiInnovationScore = extractInnovationFromFindings(reviewReport);
+        aiInnovationScore = (int) (aiInnovationScore * 0.625); // 调整为25分制
 
-        // 3. 项目独特性 (0-20)
-        // 基于项目描述和功能的独特性
+        // 4. 项目独特性 (0-15)
         int uniquenessScore = calculateUniqueness(project);
+        uniquenessScore = (int) (uniquenessScore * 0.75); // 调整为15分制
 
-        return Math.min(100, techStackScore + aiInnovationScore + uniquenessScore);
+        int totalScore = techStackScore + designPatternScore + aiInnovationScore + uniquenessScore;
+
+        log.debug("创新性评分明细: 技术栈={}, 设计模式={}, AI评价={}, 独特性={}, 总计={}",
+            techStackScore, designPatternScore, aiInnovationScore, uniquenessScore, totalScore);
+
+        return Math.min(100, totalScore);
+    }
+
+    /**
+     * 计算设计模式创新性 (0-30)
+     */
+    private int calculateDesignPatternInnovation(CodeInsight codeInsight) {
+        if (codeInsight == null || codeInsight.getDesignPatterns() == null) {
+            return 10; // 默认分数
+        }
+
+        List<DesignPattern> patterns = codeInsight.getDesignPatterns().getPatterns();
+        if (patterns.isEmpty()) {
+            return 5; // 没有使用设计模式
+        }
+
+        int score = 10; // 基础分
+
+        // 每种设计模式加分
+        for (DesignPattern pattern : patterns) {
+            switch (pattern.getType()) {
+                case SINGLETON, FACTORY, BUILDER -> score += 2; // 常见模式
+                case ADAPTER, DECORATOR, PROXY, FACADE -> score += 3; // 结构型模式
+                case STRATEGY, OBSERVER, COMMAND, TEMPLATE_METHOD -> score += 3; // 行为型模式
+                case MVC, MVVM, REPOSITORY -> score += 4; // 架构模式
+                default -> score += 1;
+            }
+        }
+
+        // 多种模式组合使用额外加分
+        if (patterns.size() >= 3) {
+            score += 5;
+        }
+
+        return Math.min(30, score);
     }
 
     /**
@@ -156,29 +375,137 @@ public class HackathonScoringService {
     }
 
     /**
-     * 计算完成度分数 (0-100)
+     * 计算完成度分数 (0-100) - AST增强版
      *
      * 评估维度：
-     * 1. 核心功能完整性 (50%)
-     * 2. 代码提交频率 (30%)
-     * 3. 测试覆盖率 (20%)
+     * 1. 代码结构完整性 40%
+     * 2. 功能实现度 30%
+     * 3. 测试覆盖率 20%
+     * 4. 文档完整性 10%
      */
-    private int calculateCompleteness(ReviewReport reviewReport, Project project) {
-        // 1. 核心功能完整性 (0-50)
-        int functionalityScore = calculateFunctionality(project);
+    private int calculateCompletenessWithAST(ReviewReport reviewReport, Project project, CodeInsight codeInsight) {
+        // 1. 代码结构完整性 (0-40)
+        int structureScore = calculateStructureCompleteness(codeInsight);
 
-        // 2. 代码质量作为完成度的指标 (0-30)
-        int qualityScore = (int) (reviewReport.getOverallScore() * 0.3);
+        // 2. 功能实现度 (0-30)
+        int functionalityScore = calculateFunctionalityWithAST(project, codeInsight);
 
         // 3. 测试覆盖率 (0-20)
         int testScore = calculateTestCoverage(project);
 
-        return Math.min(100, functionalityScore + qualityScore + testScore);
+        // 4. 文档完整性 (0-10)
+        int docScore = (int) (calculateDocumentation(project) * 0.1);
+
+        int totalScore = structureScore + functionalityScore + testScore + docScore;
+
+        log.debug("完成度评分明细: 结构={}, 功能={}, 测试={}, 文档={}, 总计={}",
+            structureScore, functionalityScore, testScore, docScore, totalScore);
+
+        return Math.min(100, totalScore);
     }
 
     /**
-     * 计算功能完整性
+     * 计算代码结构完整性 (0-40)
      */
+    private int calculateStructureCompleteness(CodeInsight codeInsight) {
+        if (codeInsight == null) {
+            return 15; // 默认分数
+        }
+
+        int score = 0;
+
+        // 类数量评分 (0-15)
+        int classCount = codeInsight.getClasses().size();
+        if (classCount >= 20) {
+            score += 15;
+        } else if (classCount >= 10) {
+            score += 12;
+        } else if (classCount >= 5) {
+            score += 9;
+        } else if (classCount >= 3) {
+            score += 6;
+        } else {
+            score += 3;
+        }
+
+        // 方法数量评分 (0-10)
+        if (codeInsight.getStatistics() != null) {
+            int methodCount = codeInsight.getStatistics().getTotalMethods();
+            if (methodCount >= 50) {
+                score += 10;
+            } else if (methodCount >= 30) {
+                score += 8;
+            } else if (methodCount >= 15) {
+                score += 6;
+            } else if (methodCount >= 5) {
+                score += 4;
+            }
+        }
+
+        // 架构清晰度 (0-10)
+        if (codeInsight.getStructure() != null &&
+            codeInsight.getStructure().getArchitectureStyle() != null) {
+            score += 10; // 有明确的架构风格
+        } else {
+            score += 5;
+        }
+
+        // 接口使用 (0-5)
+        if (codeInsight.getInterfaces() != null && !codeInsight.getInterfaces().isEmpty()) {
+            score += 5;
+        }
+
+        return Math.min(40, score);
+    }
+
+    /**
+     * 计算功能实现度 (0-30) - AST增强版
+     */
+    private int calculateFunctionalityWithAST(Project project, CodeInsight codeInsight) {
+        int score = 0;
+
+        // 基于文件数量评估 (0-10)
+        int fileCount = project.getSourceFiles().size();
+        if (fileCount >= 20) score += 10;
+        else if (fileCount >= 10) score += 8;
+        else if (fileCount >= 5) score += 6;
+        else score += 3;
+
+        // 基于代码行数评估 (0-10)
+        int totalLines = project.getTotalLines();
+        if (totalLines >= 2000) score += 10;
+        else if (totalLines >= 1000) score += 8;
+        else if (totalLines >= 500) score += 6;
+        else if (totalLines >= 200) score += 4;
+        else score += 2;
+
+        // 基于AST分析的功能完整性 (0-10)
+        if (codeInsight != null) {
+            // 有多层架构
+            if (codeInsight.getStructure() != null &&
+                codeInsight.getStructure().getLayers().size() >= 3) {
+                score += 5;
+            }
+
+            // 方法平均长度合理（不要太短也不要太长）
+            if (codeInsight.getComplexityMetrics() != null) {
+                double avgLength = codeInsight.getComplexityMetrics().getAvgMethodLength();
+                if (avgLength >= 10 && avgLength <= 50) {
+                    score += 5; // 方法长度合理
+                } else {
+                    score += 2;
+                }
+            }
+        }
+
+        return Math.min(30, score);
+    }
+
+    /**
+     * 计算功能完整性（已废弃，使用calculateFunctionalityWithAST代替）
+     * @deprecated 使用 {@link #calculateFunctionalityWithAST(Project, CodeInsight)} 代替
+     */
+    @Deprecated
     private int calculateFunctionality(Project project) {
         int score = 0;
 

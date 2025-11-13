@@ -304,13 +304,13 @@ String enhancedPrompt = builder.buildEnhancedPrompt(project, insight);
 ## 📚 文档导航
 
 ### 快速开始
-👉 [AST-QUICKSTART.md](./AST-QUICKSTART.md) - 5分钟快速上手
+👉 [AST-QUICKSTART.md](AST-QUICKSTART.md) - 5分钟快速上手
 
 ### 深入了解
-📖 [AST-IMPLEMENTATION-REPORT.md](./AST-IMPLEMENTATION-REPORT.md) - 完整实现文档
+📖 [AST-IMPLEMENTATION-REPORT.md](AST-IMPLEMENTATION-REPORT.md) - 完整实现文档
 
 ### 设计方案
-📝 [AST-ENHANCEMENT-PROPOSAL.md](./AST-ENHANCEMENT-PROPOSAL.md) - 原始设计方案
+📝 [AST-ENHANCEMENT-PROPOSAL.md](AST-ENHANCEMENT-PROPOSAL.md) - 原始设计方案
 
 ---
 

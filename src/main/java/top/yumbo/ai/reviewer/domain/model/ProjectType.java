@@ -9,6 +9,7 @@ public enum ProjectType {
     PYTHON("python", "Python项目"),
     JAVASCRIPT("javascript", "JavaScript项目"),
     TYPESCRIPT("typescript", "TypeScript项目"),
+    NODE("node", "Node.js项目"),
     GO("go", "Go项目"),
     RUST("rust", "Rust项目"),
     CSHARP("csharp", "C#项目"),

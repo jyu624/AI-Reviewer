@@ -358,8 +358,8 @@ mvn test -Dtest=GiteeAdapterTest#testCloneRepository
 
 ## 📚 相关文档
 
-- [Gitee 集成完成报告](./20251112064600-GITEE-INTEGRATION-COMPLETED.md)
-- [项目 README](../README.md)
+- [Gitee 集成完成报告](20251112064600-GITEE-INTEGRATION-COMPLETED.md)
+- [项目 README](../../README.md)
 - [Gitee 官方文档](https://gitee.com/help)
 
 ---

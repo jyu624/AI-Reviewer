@@ -5,6 +5,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import lombok.extern.slf4j.Slf4j;
@@ -348,15 +349,24 @@ public class JavaParserAdapter extends AbstractASTParser {
      * 获取访问修饰符
      */
     private ClassStructure.AccessModifier getAccessModifier(BodyDeclaration<?> declaration) {
-        if (declaration.isPublic()) {
-            return ClassStructure.AccessModifier.PUBLIC;
-        } else if (declaration.isPrivate()) {
-            return ClassStructure.AccessModifier.PRIVATE;
-        } else if (declaration.isProtected()) {
-            return ClassStructure.AccessModifier.PROTECTED;
-        } else {
-            return ClassStructure.AccessModifier.PACKAGE_PRIVATE;
+        // 使用JavaParser原生方法判断访问修饰符
+        if (declaration instanceof FieldDeclaration) {
+            FieldDeclaration field = (FieldDeclaration) declaration;
+            if (field.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
+            if (field.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
+            if (field.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
+        } else if (declaration instanceof MethodDeclaration) {
+            MethodDeclaration method = (MethodDeclaration) declaration;
+            if (method.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
+            if (method.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
+            if (method.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
+        } else if (declaration instanceof ConstructorDeclaration) {
+            ConstructorDeclaration constructor = (ConstructorDeclaration) declaration;
+            if (constructor.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
+            if (constructor.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
+            if (constructor.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
         }
+        return ClassStructure.AccessModifier.PACKAGE_PRIVATE;
     }
 
     /**

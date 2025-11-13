@@ -748,7 +748,7 @@ java -jar ai-reviewer.jar hackathon \
 - [架构深度分析](md/20251112073000-ARCHITECTURE-DEEP-ANALYSIS.md) - 六边形架构详细解析
 - [Phase 1 完成报告](md/20251112085100-PHASE1-COMPLETION-REPORT.md) - 架构重构总结
 - [六边形架构指南](md/20251111234200-HEXAGONAL-QUICKSTART-GUIDE.md) - 快速入门指南
-- [架构对比分析](md/20251111234500-ARCHITECTURE-COMPARISON.md) - 重构前后对比
+- [架构对比分析](md/refactor/20251111234500-ARCHITECTURE-COMPARISON.md) - 重构前后对比
 
 #### 黑客松功能文档
 
@@ -759,14 +759,14 @@ java -jar ai-reviewer.jar hackathon \
 
 #### 测试报告
 
-- [测试完成报告](md/20251112011000-TEST-COMPLETION-REPORT.md)
+- [测试完成报告](md/refactor/20251112011000-TEST-COMPLETION-REPORT.md)
 - [集成测试总结](md/20251112063500-GITHUB-INTEGRATION-TEST-FINAL-SUMMARY.md)
 - [DeepSeek 测试改进](md/20251112071600-DEEPSEEK-TEST-IMPROVEMENT.md)
 
 #### 实施指南
 
-- [CLI 用户指南](md/20251112030000-CLI-USER-GUIDE.md)
-- [项目交付清单](md/20251111234800-PROJECT-DELIVERY-CHECKLIST.md)
+- [CLI 用户指南](md/refactor/20251112030000-CLI-USER-GUIDE.md)
+- [项目交付清单](md/refactor/20251111234800-PROJECT-DELIVERY-CHECKLIST.md)
 - [下一步行动计划](md/20251112090000-NEXT-PHASE-ACTION-PLAN.md)
 
 ### 在线文档

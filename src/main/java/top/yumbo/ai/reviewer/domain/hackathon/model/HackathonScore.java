@@ -61,6 +61,13 @@ public class HackathonScore {
     }
 
     /**
+     * 获取综合得分（getTotalScore是calculateTotalScore的别名）
+     */
+    public int getTotalScore() {
+        return calculateTotalScore();
+    }
+
+    /**
      * 获取等级 (S, A, B, C, D, F)
      */
     public String getGrade() {

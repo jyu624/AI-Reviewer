@@ -360,6 +360,165 @@ public class CustomPatternDetector {
 
 ---
 
+## 🌍 多语言支持
+
+AI-Reviewer 现在支持多种编程语言的AST分析！
+
+### 支持的语言
+
+| 语言 | 状态 | 解析器 |
+|------|------|--------|
+| **Java** | ✅ 完整支持 | JavaParser |
+| **Python** | ✅ 基础支持 | 正则表达式解析 |
+| **JavaScript/TypeScript** | ✅ 基础支持 | 正则表达式解析 |
+| **Go** | 🚧 计划中 | - |
+| **C/C++** | 🚧 计划中 | - |
+
+### 使用解析器工厂（推荐）
+
+解析器工厂会自动根据项目类型选择合适的解析器：
+
+```java
+// 创建工厂，自动支持所有语言
+ASTParserFactory factory = new ASTParserFactory();
+
+// 自动选择解析器
+CodeInsight insight = factory.parseProject(project);
+
+// 查看支持的语言
+List<String> supportedTypes = factory.getSupportedTypes();
+// 输出: [JavaParser, PythonParser, JavaScriptParser]
+```
+
+### Python项目示例
+
+```java
+// Python项目
+Project pythonProject = Project.builder()
+    .name("my-python-app")
+    .type(ProjectType.PYTHON)
+    .rootPath(Paths.get("path/to/python/project"))
+    .build();
+
+// 使用Python解析器
+PythonParserAdapter pythonParser = new PythonParserAdapter();
+CodeInsight insight = pythonParser.parseProject(pythonProject);
+
+// 或使用工厂自动选择
+ASTParserFactory factory = new ASTParserFactory();
+CodeInsight insight2 = factory.parseProject(pythonProject);
+
+// 查看分析结果
+System.out.println("类数量: " + insight.getClasses().size());
+System.out.println("平均复杂度: " + insight.getComplexityMetrics().getAvgCyclomaticComplexity());
+```
+
+**支持的Python特性**:
+```python
+class UserService:
+    """用户服务"""
+    
+    def __init__(self, repository):
+        self.repository = repository
+    
+    @staticmethod
+    def validate_email(email: str) -> bool:
+        # 邮箱验证逻辑
+        return '@' in email
+    
+    async def fetch_user(self, user_id: int) -> User:
+        if user_id <= 0:
+            raise ValueError("Invalid user ID")
+        return await self.repository.find(user_id)
+```
+
+### JavaScript/TypeScript项目示例
+
+```java
+// JavaScript/TypeScript项目
+Project jsProject = Project.builder()
+    .name("my-react-app")
+    .type(ProjectType.NODE)
+    .rootPath(Paths.get("path/to/js/project"))
+    .build();
+
+// 使用JavaScript解析器
+JavaScriptParserAdapter jsParser = new JavaScriptParserAdapter();
+CodeInsight insight = jsParser.parseProject(jsProject);
+
+// 查看分析结果
+System.out.println("类数量: " + insight.getClasses().size());
+System.out.println("接口数量: " + insight.getInterfaces().size()); // TypeScript
+System.out.println("平均复杂度: " + insight.getComplexityMetrics().getAvgCyclomaticComplexity());
+```
+
+**支持的JavaScript/TypeScript特性**:
+```javascript
+// ES6 类
+class UserService extends BaseService {
+    constructor(repository) {
+        super();
+        this.repository = repository;
+    }
+    
+    async fetchUser(userId) {
+        if (!userId) {
+            throw new Error('User ID is required');
+        }
+        return await this.repository.find(userId);
+    }
+}
+
+// TypeScript 接口
+interface User {
+    id: number;
+    name: string;
+    email: string;
+}
+
+// TypeScript 装饰器
+@Component({
+    selector: 'app-user',
+    templateUrl: './user.component.html'
+})
+export class UserComponent {
+    @Input() userData: User;
+}
+
+// 箭头函数
+const processData = async (data) => {
+    const result = data.map(item => item.value);
+    return result.filter(val => val > 0);
+};
+```
+
+### 混合语言项目
+
+对于包含多种语言的项目：
+
+```java
+// 创建工厂
+ASTParserFactory factory = new ASTParserFactory();
+
+// 遍历所有文件，自动选择解析器
+for (SourceFile file : project.getSourceFiles()) {
+    String fileType = detectLanguageType(file);
+    
+    if (factory.supports(fileType)) {
+        // 自动使用合适的解析器
+        CodeInsight insight = factory.parseProject(project);
+        
+        // 处理分析结果...
+    }
+}
+```
+
+### 更多信息
+
+详见 [多语言支持文档](MULTI-LANGUAGE-SUPPORT.md)
+
+---
+
 ## ❓ FAQ
 
 ### Q1: 支持哪些Java版本？
@@ -427,8 +586,8 @@ public int calculateScore(Project project) {
 
 ## 📚 相关文档
 
-- [AST增强方案](./AST-ENHANCEMENT-PROPOSAL.md) - 完整的设计方案
-- [实现报告](./AST-IMPLEMENTATION-REPORT.md) - 详细的实现文档
+- [AST增强方案](AST-ENHANCEMENT-PROPOSAL.md) - 完整的设计方案
+- [实现报告](AST-IMPLEMENTATION-REPORT.md) - 详细的实现文档
 - [JavaParser官方文档](https://javaparser.org/) - JavaParser使用指南
 
 ---
@@ -437,7 +596,7 @@ public int calculateScore(Project project) {
 
 发现问题或有改进建议？
 
-1. 查看 [AST-IMPLEMENTATION-REPORT.md](./AST-IMPLEMENTATION-REPORT.md) 了解实现细节
+1. 查看 [AST-IMPLEMENTATION-REPORT.md](AST-IMPLEMENTATION-REPORT.md) 了解实现细节
 2. 运行测试：`mvn test -Dtest=JavaParserAdapterTest`
 3. 提交Issue或PR
 

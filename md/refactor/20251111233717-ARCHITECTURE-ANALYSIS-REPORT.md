@@ -873,7 +873,7 @@ AIReviewer
 *本报告基于源码静态分析和架构评审，部分性能数据为估算值。实际效果需要在生产环境中验证。*
 这是我第一步的提示词，调用的是Copilot Claude Sonnet 4.5
 Sonet 4.5生成的最后一个md是
-[20251111234800-PROJECT-DELIVERY-CHECKLIST.md](./20251111234800-PROJECT-DELIVERY-CHECKLIST.md)
+[20251111234800-PROJECT-DELIVERY-CHECKLIST.md](20251111234800-PROJECT-DELIVERY-CHECKLIST.md)
 
 ```bash
 接下来我将安排任务，要求过程中所有生成的markdown文件名带上YYYYMMDDHHmmss的时间戳前缀，并且将其归档到创建好的md文件夹中。
