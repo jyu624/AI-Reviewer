@@ -1,6 +1,31 @@
-# AI Reviewer v2.0 配置文件示例
 # 这是AI Reviewer的完整配置文件示例，包含所有可配置选项
+# AI Reviewer - AWS S3 Storage Configuration
+# S3 存储配置，使用 IAM 角色默认凭证
 
+# =============================================================================
+# S3 存储配置（使用 IAM 角色）
+# =============================================================================
+s3Storage:
+  # AWS 区域
+  region: "us-east-1"
+
+  # 默认存储桶名称（可选，如果不设置，需要在调用时指定）
+  bucketName: "your-bucket-name"
+
+  # 不设置 accessKeyId 和 secretAccessKey
+  # 将自动使用 AWS 默认凭证链（IAM 角色）
+
+  # 性能配置
+  maxConcurrency: 10         # 最大并发下载/上传数
+  connectTimeout: 30000      # 连接超时（毫秒）
+  readTimeout: 60000         # 读取超时（毫秒）
+  maxRetries: 3              # 最大重试次数
+  retryDelay: 1000           # 重试延迟（毫秒）
+
+  # 高级配置（可选）
+  useAccelerateEndpoint: false  # 是否使用传输加速端点
+  usePathStyleAccess: false     # 是否使用路径样式访问
+  # endpoint: ""                # 自定义端点（用于兼容 S3 的存储）
 # =============================================================================
 # AI服务配置
 # =============================================================================
