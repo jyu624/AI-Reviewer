@@ -282,7 +282,6 @@ public class HackathonInteractiveApp {
 
         CloneRequest request = CloneRequest.builder()
                 .url(url)
-                .branch("master")
                 .timeoutSeconds(300)
                 .build();
 
