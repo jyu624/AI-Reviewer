@@ -1,0 +1,62 @@
+# 自定义配置文件示例
+# 用于演示 -Dconfig 参数的使用
+
+# AI 服务配置
+aiService:
+  provider: "bedrock"  # AWS Bedrock
+  model: "anthropic.claude-v2"
+  region: "us-east-1"
+  maxTokens: 8000
+  temperature: 0.1
+  maxRetries: 3
+  maxConcurrency: 5
+  # API Key 通过环境变量 AI_API_KEY 提供
+
+# S3 存储配置
+s3Storage:
+  region: "us-east-1"
+  bucketName: "custom-hackathon-bucket"
+  maxConcurrency: 15
+  connectTimeout: 45000
+  readTimeout: 90000
+  maxRetries: 5
+  # IAM 角色自动提供凭证
+
+# 文件系统配置
+fileSystem:
+  includePatterns:
+    - "*.java"
+    - "*.py"
+    - "*.js"
+    - "*.ts"
+    - "*.go"
+    - "*.rs"
+    - "*.cpp"
+    - "*.c"
+    - "*.yaml"
+    - "*.json"
+    - "*.md"
+    - "pom.xml"
+    - "package.json"
+    - "requirements.txt"
+  excludePatterns:
+    - "**/target/**"
+    - "**/build/**"
+    - "**/node_modules/**"
+    - "**/.git/**"
+    - "**/test/**"
+  maxFileSizeKB: 1024
+
+# 缓存配置
+cache:
+  enabled: true
+  type: "file"
+  ttlHours: 48
+  maxSize: 2000
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "./logs/hackathon-custom.log"
+  console: true
+

@@ -65,7 +65,21 @@ public class ConfigurationLoader {
      */
     private static void loadFromYaml(Configuration config) {
         try {
-            // 优先从 classpath 加载
+            // 优先级 1: 从系统属性 -Dconfig 指定的路径加载
+            String configPathFromProperty = System.getProperty("config");
+            if (configPathFromProperty != null && !configPathFromProperty.isBlank()) {
+                Path customConfigPath = Paths.get(configPathFromProperty);
+                if (Files.exists(customConfigPath)) {
+                    ConfigYaml yaml = YAML_MAPPER.readValue(customConfigPath.toFile(), ConfigYaml.class);
+                    applyYamlConfig(config, yaml);
+                    log.info("配置已从自定义路径加载: {}", customConfigPath.toAbsolutePath());
+                    return;
+                } else {
+                    log.warn("自定义配置文件不存在: {}，尝试其他路径", customConfigPath);
+                }
+            }
+
+            // 优先级 2: 从 classpath 加载
             InputStream inputStream = ConfigurationLoader.class.getClassLoader()
                     .getResourceAsStream(DEFAULT_CONFIG_FILE);
 
@@ -76,12 +90,12 @@ public class ConfigurationLoader {
                 return;
             }
 
-            // 然后尝试从文件系统加载
+            // 优先级 3: 从当前目录的文件系统加载
             Path configPath = Paths.get(DEFAULT_CONFIG_FILE);
             if (Files.exists(configPath)) {
                 ConfigYaml yaml = YAML_MAPPER.readValue(configPath.toFile(), ConfigYaml.class);
                 applyYamlConfig(config, yaml);
-                log.info("配置已从文件 {} 加载", configPath);
+                log.info("配置已从文件 {} 加载", configPath.toAbsolutePath());
                 return;
             }
 

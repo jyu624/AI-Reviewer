@@ -12,7 +12,7 @@
 
 ```bash
 # 快速构建（跳过测试）
-mvn clean package -f hackathon-pom.xml
+mvn clean package -Dmaven.test.skip=true -f hackathon-pom.xml
 
 # 输出文件：target/hackathon-reviewer.jar
 ```
