@@ -191,6 +191,7 @@ public class BedrockAdapter implements AIServicePort {
             String requestBody = buildRequestBody(prompt);
 
             log.debug("调用 Bedrock 模型 - Model ID: {}, Region: {}", modelId, region);
+            log.debug("请求体: {}", requestBody);
 
             // 调用模型
             InvokeModelRequest request = InvokeModelRequest.builder()
@@ -202,6 +203,7 @@ public class BedrockAdapter implements AIServicePort {
 
             // 解析响应
             String responseBody = response.body().asUtf8String();
+            log.debug("响应体: {}", responseBody);
             return parseResponse(responseBody);
 
         } catch (Exception e) {
@@ -217,13 +219,35 @@ public class BedrockAdapter implements AIServicePort {
         JSONObject requestBody = new JSONObject();
 
         // 支持 ARN 格式的 model ID（例如：arn:aws:bedrock:us-east-1:xxx:inference-profile/us.anthropic.claude-xxx）
-        if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude")) {
-            // Claude 模型格式
-            requestBody.put("prompt", "\n\nHuman: " + prompt + "\n\nAssistant:");
-            requestBody.put("max_tokens_to_sample", maxTokens);
-            requestBody.put("temperature", temperature);
-            requestBody.put("top_p", 0.9);
-            requestBody.put("stop_sequences", new String[]{"\n\nHuman:"});
+        if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude") ||
+            modelId.contains("claude-3") || modelId.contains("claude-sonnet") || modelId.contains("claude-haiku")) {
+
+            // 检测是否为 Claude 3+ 模型（需要使用 Messages API）
+            boolean isClaude3Plus = modelId.contains("claude-3") ||
+                                   modelId.contains("claude-sonnet") ||
+                                   modelId.contains("claude-haiku") ||
+                                   modelId.contains("claude-opus");
+
+            if (isClaude3Plus) {
+                // Claude 3+ Messages API 格式
+                JSONObject message = new JSONObject();
+                message.put("role", "user");
+                message.put("content", prompt);
+
+                requestBody.put("anthropic_version", "bedrock-2023-05-31");
+                requestBody.put("max_tokens", maxTokens);
+                requestBody.put("messages", new Object[]{message});
+                requestBody.put("temperature", temperature);
+                requestBody.put("top_p", 0.9);
+
+            } else {
+                // Claude 2 及以下版本（旧的文本补全格式）
+                requestBody.put("prompt", "\n\nHuman: " + prompt + "\n\nAssistant:");
+                requestBody.put("max_tokens_to_sample", maxTokens);
+                requestBody.put("temperature", temperature);
+                requestBody.put("top_p", 0.9);
+                requestBody.put("stop_sequences", new String[]{"\n\nHuman:"});
+            }
 
         } else if (modelId.contains("amazon.titan") || modelId.startsWith("amazon.titan")) {
             // Titan 模型格式
@@ -274,9 +298,34 @@ public class BedrockAdapter implements AIServicePort {
             JSONObject response = JSON.parseObject(responseBody);
 
             // 支持 ARN 格式的 model ID
-            if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude")) {
-                // Claude 响应格式
-                return response.getString("completion");
+            if (modelId.contains("anthropic.claude") || modelId.startsWith("anthropic.claude") ||
+                modelId.contains("claude-3") || modelId.contains("claude-sonnet") || modelId.contains("claude-haiku")) {
+
+                // 检测是否为 Claude 3+ 模型
+                boolean isClaude3Plus = modelId.contains("claude-3") ||
+                                       modelId.contains("claude-sonnet") ||
+                                       modelId.contains("claude-haiku") ||
+                                       modelId.contains("claude-opus");
+
+                if (isClaude3Plus) {
+                    // Claude 3+ Messages API 响应格式
+                    if (response.containsKey("content")) {
+                        var content = response.getJSONArray("content");
+                        if (content != null && content.size() > 0) {
+                            return content.getJSONObject(0).getString("text");
+                        }
+                    }
+                    // 降级处理 - 如果没有 content 字段，尝试 completion
+                    if (response.containsKey("completion")) {
+                        return response.getString("completion");
+                    }
+                    // 如果都没有，返回原始响应
+                    log.warn("Claude 3+ 响应格式无法识别，返回原始响应");
+                    return responseBody;
+                } else {
+                    // Claude 2 响应格式
+                    return response.getString("completion");
+                }
 
             } else if (modelId.contains("amazon.titan") || modelId.startsWith("amazon.titan")) {
                 // Titan 响应格式

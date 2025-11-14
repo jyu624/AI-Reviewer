@@ -447,6 +447,8 @@ aiService:
   provider: "bedrock"  # 或 deepseek, openai, gemini, claude
   model: "anthropic.claude-v2"
   region: "us-east-1"
+  # 注意：使用 Bedrock 时不需要配置 apiKey (使用 IAM 角色)
+  # 其他 AI 服务需要配置 apiKey 或通过环境变量 AI_API_KEY 提供
   maxTokens: 8000
   temperature: 0
   maxRetries: 2
