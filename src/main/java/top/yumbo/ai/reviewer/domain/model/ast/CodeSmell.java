@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * 代码坏味道
- *
+ * <p>
  * 识别代码中的不良实践和潜在问题
  *
  * @author AI-Reviewer Team

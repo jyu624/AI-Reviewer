@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 代码洞察 - 项目级别的代码分析结果
- *
+ * <p>
  * 这是AST分析的核心领域模型，包含了项目的结构化代码信息
  *
  * @author AI-Reviewer Team

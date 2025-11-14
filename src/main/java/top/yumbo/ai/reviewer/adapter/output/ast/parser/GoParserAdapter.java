@@ -2,7 +2,6 @@ package top.yumbo.ai.reviewer.adapter.output.ast.parser;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.domain.model.Project;
-import top.yumbo.ai.reviewer.domain.model.ProjectType;
 import top.yumbo.ai.reviewer.domain.model.SourceFile;
 import top.yumbo.ai.reviewer.domain.model.ast.*;
 
@@ -281,7 +280,7 @@ public class GoParserAdapter extends AbstractASTParser {
 
             // 解析接口方法签名（简化）
             String trimmed = currentLine.trim();
-            if (foundOpenBrace && braceLevel == 1 && !trimmed.isEmpty() && trimmed.contains("(")) {
+            if (foundOpenBrace && braceLevel == 1 && trimmed.contains("(")) {
                 Pattern methodSigPattern = Pattern.compile("(\\w+)\\s*\\(([^)]*)\\)");
                 Matcher sigMatcher = methodSigPattern.matcher(trimmed);
                 if (sigMatcher.find()) {
@@ -303,8 +302,8 @@ public class GoParserAdapter extends AbstractASTParser {
     /**
      * 解析方法
      */
-    private MethodInfo parseMethod(List<String> lines, int startLine) {
-        String line = lines.get(startLine).trim();
+    private MethodInfo parseMethod(List<String> lines, int methodBodyStart) {
+        String line = lines.get(methodBodyStart).trim();
         Matcher methodMatcher = METHOD_PATTERN.matcher(line);
         Matcher funcMatcher = FUNC_PATTERN.matcher(line);
 
@@ -339,8 +338,7 @@ public class GoParserAdapter extends AbstractASTParser {
 
         // 找到方法结束位置
         int braceLevel = 0;
-        int i = startLine;
-        int methodBodyStart = startLine;
+        int i = methodBodyStart;
 
         while (i < lines.size()) {
             String currentLine = lines.get(i);
@@ -350,13 +348,13 @@ public class GoParserAdapter extends AbstractASTParser {
                 else if (c == '}') braceLevel--;
             }
 
-            if (braceLevel == 0 && i > startLine) {
+            if (braceLevel == 0 && i > methodBodyStart) {
                 break;
             }
             i++;
         }
 
-        int linesOfCode = i - startLine + 1;
+        int linesOfCode = i - methodBodyStart + 1;
         builder.linesOfCode(linesOfCode);
 
         // 计算复杂度

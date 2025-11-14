@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ProjectType;
 import top.yumbo.ai.reviewer.domain.model.SourceFile;
+
 import top.yumbo.ai.reviewer.domain.model.ast.*;
 
 import java.io.BufferedReader;
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
 
 /**
  * Python解析器适配器
- *
+ * <p>
  * 使用正则表达式和文本解析实现Python代码分析
  * 注：这是一个简化实现，对于生产环境建议使用ANTLR4或Jython
  *
@@ -535,8 +536,8 @@ public class PythonParserAdapter extends AbstractASTParser {
 
         return ComplexityMetrics.builder()
             .avgCyclomaticComplexity(avgComplexity)
-            .maxCyclomaticComplexity(mostComplex != null ? mostComplex.getCyclomaticComplexity() : 0)
-            .mostComplexMethod(mostComplex != null ? mostComplex.getMethodName() : null)
+            .maxCyclomaticComplexity(mostComplex.getCyclomaticComplexity())
+            .mostComplexMethod(mostComplex.getMethodName())
             .highComplexityMethodCount((int) highComplexityCount)
             .avgMethodLength(avgLength)
             .longMethodCount((int) longMethodCount)

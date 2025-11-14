@@ -4,10 +4,9 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.*;
-import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.stmt.*;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ProjectType;
@@ -20,7 +19,7 @@ import java.util.*;
 
 /**
  * JavaParser适配器
- *
+ * <p>
  * 使用JavaParser库解析Java源码，提取AST信息
  *
  * @author AI-Reviewer Team
@@ -104,7 +103,7 @@ public class JavaParserAdapter extends AbstractASTParser {
         File file = sourceFile.getPath().toFile();
         ParseResult<CompilationUnit> parseResult = javaParser.parse(file);
 
-        if (!parseResult.isSuccessful() || !parseResult.getResult().isPresent()) {
+        if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
             log.warn("解析失败: {}", sourceFile.getRelativePath());
             return;
         }
@@ -113,7 +112,7 @@ public class JavaParserAdapter extends AbstractASTParser {
 
         // 获取包名
         String packageName = cu.getPackageDeclaration()
-            .map(pd -> pd.getNameAsString())
+            .map(NodeWithName::getNameAsString)
             .orElse("default");
 
         // 统计包中的类数量
@@ -350,18 +349,15 @@ public class JavaParserAdapter extends AbstractASTParser {
      */
     private ClassStructure.AccessModifier getAccessModifier(BodyDeclaration<?> declaration) {
         // 使用JavaParser原生方法判断访问修饰符
-        if (declaration instanceof FieldDeclaration) {
-            FieldDeclaration field = (FieldDeclaration) declaration;
+        if (declaration instanceof FieldDeclaration field) {
             if (field.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
             if (field.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
             if (field.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
-        } else if (declaration instanceof MethodDeclaration) {
-            MethodDeclaration method = (MethodDeclaration) declaration;
+        } else if (declaration instanceof MethodDeclaration method) {
             if (method.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
             if (method.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
             if (method.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
-        } else if (declaration instanceof ConstructorDeclaration) {
-            ConstructorDeclaration constructor = (ConstructorDeclaration) declaration;
+        } else if (declaration instanceof ConstructorDeclaration constructor) {
             if (constructor.isPublic()) return ClassStructure.AccessModifier.PUBLIC;
             if (constructor.isPrivate()) return ClassStructure.AccessModifier.PRIVATE;
             if (constructor.isProtected()) return ClassStructure.AccessModifier.PROTECTED;
@@ -636,8 +632,8 @@ public class JavaParserAdapter extends AbstractASTParser {
 
         return ComplexityMetrics.builder()
             .avgCyclomaticComplexity(avgComplexity)
-            .maxCyclomaticComplexity(mostComplex != null ? mostComplex.getCyclomaticComplexity() : 0)
-            .mostComplexMethod(mostComplex != null ? mostComplex.getMethodName() : null)
+            .maxCyclomaticComplexity(mostComplex.getCyclomaticComplexity())
+            .mostComplexMethod(mostComplex.getMethodName())
             .highComplexityMethodCount((int) highComplexityCount)
             .avgMethodLength(avgLength)
             .longMethodCount((int) longMethodCount)

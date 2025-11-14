@@ -10,7 +10,7 @@ import java.util.Set;
 
 /**
  * 类结构分析
- *
+ * <p>
  * 表示一个Java类的完整结构信息，包括字段、方法、继承关系等
  *
  * @author AI-Reviewer Team

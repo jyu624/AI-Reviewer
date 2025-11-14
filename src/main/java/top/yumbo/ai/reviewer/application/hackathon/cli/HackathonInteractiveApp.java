@@ -3,7 +3,11 @@ package top.yumbo.ai.reviewer.application.hackathon.cli;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.adapter.output.repository.GitRepositoryAdapter;
-import top.yumbo.ai.reviewer.application.hackathon.service.*;
+import top.yumbo.ai.reviewer.application.hackathon.service.HackathonAnalysisService;
+import top.yumbo.ai.reviewer.application.hackathon.service.HackathonIntegrationService;
+import top.yumbo.ai.reviewer.application.hackathon.service.HackathonScoringService;
+import top.yumbo.ai.reviewer.application.hackathon.service.LeaderboardService;
+import top.yumbo.ai.reviewer.application.hackathon.service.TeamManagementService;
 import top.yumbo.ai.reviewer.application.port.output.CloneRequest;
 import top.yumbo.ai.reviewer.application.port.output.RepositoryPort;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
@@ -302,8 +306,7 @@ public class HackathonInteractiveApp {
         int max = Math.max(javaCount, Math.max(pythonCount, jsCount));
         if (max == javaCount) return ProjectType.JAVA;
         if (max == pythonCount) return ProjectType.PYTHON;
-        if (max == jsCount) return ProjectType.JAVASCRIPT;
-        return ProjectType.UNKNOWN;
+        return ProjectType.JAVASCRIPT;
     }
 
     /**

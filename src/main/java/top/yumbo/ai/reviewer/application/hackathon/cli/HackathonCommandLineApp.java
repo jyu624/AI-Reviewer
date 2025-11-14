@@ -10,7 +10,7 @@ import top.yumbo.ai.reviewer.adapter.output.repository.GitRepositoryAdapter;
 import top.yumbo.ai.reviewer.adapter.output.storage.S3StorageAdapter;
 import top.yumbo.ai.reviewer.adapter.output.storage.S3StorageConfig;
 import top.yumbo.ai.reviewer.application.service.S3StorageService;
-import top.yumbo.ai.reviewer.domain.model.S3DownloadResult;
+import top.yumbo.ai.reviewer.domain.model.*;
 import top.yumbo.ai.reviewer.application.hackathon.service.HackathonScoringService;
 import top.yumbo.ai.reviewer.application.port.output.CloneRequest;
 import top.yumbo.ai.reviewer.application.port.output.RepositoryPort;
@@ -19,7 +19,6 @@ import top.yumbo.ai.reviewer.application.service.ReportGenerationService;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScoringConfig;
 import top.yumbo.ai.reviewer.domain.hackathon.model.DimensionScoringRegistry;
-import top.yumbo.ai.reviewer.domain.model.*;
 import top.yumbo.ai.reviewer.infrastructure.config.Configuration;
 import top.yumbo.ai.reviewer.infrastructure.config.ConfigurationLoader;
 import top.yumbo.ai.reviewer.infrastructure.di.ApplicationModule;
@@ -565,9 +564,8 @@ public class HackathonCommandLineApp {
         int max = Math.max(javaCount, Math.max(pythonCount, jsCount));
         if (max == javaCount) return ProjectType.JAVA;
         if (max == pythonCount) return ProjectType.PYTHON;
-        if (max == jsCount) return ProjectType.JAVASCRIPT;
+        return ProjectType.JAVASCRIPT;
 
-        return ProjectType.UNKNOWN;
     }
 
     /**

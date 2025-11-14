@@ -5,7 +5,7 @@ import lombok.Data;
 
 /**
  * 复杂度指标
- *
+ * <p>
  * 汇总项目级别的复杂度统计信息
  *
  * @author AI-Reviewer Team

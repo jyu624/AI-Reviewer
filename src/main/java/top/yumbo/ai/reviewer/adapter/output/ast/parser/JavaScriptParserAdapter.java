@@ -4,12 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ProjectType;
 import top.yumbo.ai.reviewer.domain.model.SourceFile;
-import top.yumbo.ai.reviewer.domain.model.ast.*;
+import top.yumbo.ai.reviewer.domain.model.ast.ClassInfo;
+import top.yumbo.ai.reviewer.domain.model.ast.CodeInsight;
+import top.yumbo.ai.reviewer.domain.model.ast.MethodInfo;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
