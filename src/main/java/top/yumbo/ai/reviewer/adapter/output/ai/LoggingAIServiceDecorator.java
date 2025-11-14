@@ -85,25 +85,22 @@ public class LoggingAIServiceDecorator implements AIServicePort {
         int totalChars = prompts != null ?
                 Arrays.stream(prompts).mapToInt(String::length).sum() : 0;
 
-        log.info("[{}] 开始批量异步分析 - 提示词数量: {}, 总字符数: {}",
-                providerName, totalPrompts, totalChars);
-        log.debug("[{}] 批量异步分析输入参数 - 提示词数量: {}", providerName, totalPrompts);
+        log.info("[{}] 批量分析开始: {}个任务, {}字符", providerName, totalPrompts, totalChars);
 
         return delegate.analyzeBatchAsync(prompts)
                 .whenComplete((results, throwable) -> {
                     long duration = System.currentTimeMillis() - startTime;
 
                     if (throwable != null) {
-                        log.error("[{}] 批量异步分析失败 - 耗时: {}ms, 提示词数量: {}, 错误: {}",
-                                providerName, duration, totalPrompts, throwable.getMessage(), throwable);
+                        log.error("[{}] 批量失败: {}个任务, 耗时{}ms, 错误: {}",
+                                providerName, totalPrompts, duration, throwable.getMessage(), throwable);
                     } else {
                         int resultCount = results != null ? results.length : 0;
                         int totalResultChars = results != null ?
                                 Arrays.stream(results).mapToInt(String::length).sum() : 0;
 
-                        log.info("[{}] 批量异步分析完成 - 耗时: {}ms, 结果数量: {}, 总字符数: {}",
-                                providerName, duration, resultCount, totalResultChars);
-                        log.debug("[{}] 批量异步分析返回结果 - 结果数量: {}", providerName, resultCount);
+                        log.info("[{}] 批量完成: {}个任务, {}字符 -> {}字符, 耗时{}ms",
+                                providerName, resultCount, totalChars, totalResultChars, duration);
                     }
                 });
     }

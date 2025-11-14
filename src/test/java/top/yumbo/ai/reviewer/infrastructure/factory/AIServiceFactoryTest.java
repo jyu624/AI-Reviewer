@@ -1,7 +1,7 @@
 package top.yumbo.ai.reviewer.infrastructure.factory;
 
 import org.junit.jupiter.api.*;
-import top.yumbo.ai.reviewer.adapter.output.ai.*;
+import top.yumbo.ai.reviewer.adapter.output.ai.LoggingAIServiceDecorator;
 import top.yumbo.ai.reviewer.application.port.output.AIServicePort;
 import top.yumbo.ai.reviewer.infrastructure.config.Configuration;
 
@@ -18,28 +18,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("AIServiceFactory 测试")
 class AIServiceFactoryTest {
 
-    private Configuration.AIServiceConfig testConfig;
-
-    @BeforeEach
-    void setUp() {
-        testConfig = new Configuration.AIServiceConfig(
-                "deepseek",
-                "test-api-key",
-                "https://api.deepseek.com/v1",
-                "deepseek-chat",
-                2000,
-                0.3,
-                3,
-                500,
-                5000,
-                10000,
-                3,
-                null,
-                null,
-                null
-        );
-    }
-
     @Test
     @DisplayName("应该创建 DeepSeek 适配器")
     void shouldCreateDeepSeekAdapter() {
@@ -52,8 +30,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(deepseekConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(DeepSeekAIAdapter.class);
-        assertThat(adapter.getProviderName()).isEqualTo("DeepSeek");
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("DeepSeek");
 
         adapter.shutdown();
     }
@@ -70,8 +48,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(openaiConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(OpenAIAdapter.class);
-        assertThat(adapter.getProviderName()).isEqualTo("OpenAI");
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("OpenAI");
 
         adapter.shutdown();
     }
@@ -88,8 +66,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(claudeConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(ClaudeAdapter.class);
-        assertThat(adapter.getProviderName()).isEqualTo("Claude");
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("Claude");
 
         adapter.shutdown();
     }
@@ -106,8 +84,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(geminiConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(GeminiAdapter.class);
-        assertThat(adapter.getProviderName()).isEqualTo("Gemini");
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("Gemini");
 
         adapter.shutdown();
     }
@@ -124,8 +102,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(bedrockConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(BedrockAdapter.class);
-        assertThat(adapter.getProviderName()).isEqualTo("Bedrock");
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("Bedrock");
 
         adapter.shutdown();
     }
@@ -140,7 +118,8 @@ class AIServiceFactoryTest {
                 null, null, null
         );
         AIServicePort anthropicAdapter = AIServiceFactory.create(anthropicConfig);
-        assertThat(anthropicAdapter).isInstanceOf(ClaudeAdapter.class);
+        assertThat(anthropicAdapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(anthropicAdapter.getProviderName()).contains("Claude");
         anthropicAdapter.shutdown();
 
         // 测试 google 别名
@@ -150,7 +129,8 @@ class AIServiceFactoryTest {
                 null, null, null
         );
         AIServicePort googleAdapter = AIServiceFactory.create(googleConfig);
-        assertThat(googleAdapter).isInstanceOf(GeminiAdapter.class);
+        assertThat(googleAdapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(googleAdapter.getProviderName()).contains("Gemini");
         googleAdapter.shutdown();
 
         // 测试 aws 别名
@@ -160,7 +140,8 @@ class AIServiceFactoryTest {
                 "us-east-1", null, null
         );
         AIServicePort awsAdapter = AIServiceFactory.create(awsConfig);
-        assertThat(awsAdapter).isInstanceOf(BedrockAdapter.class);
+        assertThat(awsAdapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(awsAdapter.getProviderName()).contains("Bedrock");
         awsAdapter.shutdown();
     }
 
@@ -201,7 +182,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(customConfig);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(OpenAIAdapter.class);
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("OpenAI");
 
         adapter.shutdown();
     }
@@ -221,7 +203,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(configWithoutUrl);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(OpenAIAdapter.class);
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("OpenAI");
 
         adapter.shutdown();
     }
@@ -241,7 +224,8 @@ class AIServiceFactoryTest {
         AIServicePort adapter = AIServiceFactory.create(configWithoutModel);
 
         assertThat(adapter).isNotNull();
-        assertThat(adapter).isInstanceOf(DeepSeekAIAdapter.class);
+        assertThat(adapter).isInstanceOf(LoggingAIServiceDecorator.class);
+        assertThat(adapter.getProviderName()).contains("DeepSeek");
 
         adapter.shutdown();
     }

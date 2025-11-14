@@ -1,12 +1,13 @@
 package top.yumbo.ai.reviewer.adapter.input.api;
 
 import lombok.extern.slf4j.Slf4j;
+import top.yumbo.ai.reviewer.adapter.output.ai.AIAdapterFactory;
 import top.yumbo.ai.reviewer.adapter.output.ai.AIServiceConfig;
-import top.yumbo.ai.reviewer.adapter.output.ai.DeepSeekAIAdapter;
 import top.yumbo.ai.reviewer.adapter.output.cache.FileCacheAdapter;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.application.port.input.ProjectAnalysisUseCase;
 import top.yumbo.ai.reviewer.application.port.input.ReportGenerationUseCase;
+import top.yumbo.ai.reviewer.application.port.output.AIServicePort;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
 import top.yumbo.ai.reviewer.application.service.ReportGenerationService;
 import top.yumbo.ai.reviewer.domain.model.*;
@@ -36,7 +37,7 @@ public class APIAdapter {
      * 默认构造函数，使用标准适配器
      */
     public APIAdapter() {
-        DeepSeekAIAdapter aiAdapter = createDefaultAIAdapter();
+        AIServicePort aiAdapter = createDefaultAIAdapter();
         FileCacheAdapter cacheAdapter = new FileCacheAdapter();
         LocalFileSystemAdapter fileSystemAdapter = createDefaultFileSystemAdapter();
 
@@ -194,15 +195,16 @@ public class APIAdapter {
                 .build();
     }
 
-    private DeepSeekAIAdapter createDefaultAIAdapter() {
+    private AIServicePort createDefaultAIAdapter() {
         log.info("将使用Deepseek作为默认AI服务");
         String apiKey = System.getenv("AI_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("AI_API_KEY环境变量未设置，无法使用Deepseek AI服务");
         }
-        return new DeepSeekAIAdapter(new AIServiceConfig(
+        AIServiceConfig config = new AIServiceConfig(
                 apiKey, null, null, 4000, 0.3, 3, 3, 1000, 30000, 60000, null
-        ));
+        );
+        return AIAdapterFactory.createDeepSeek(config);
     }
 
     private LocalFileSystemAdapter createDefaultFileSystemAdapter() {
