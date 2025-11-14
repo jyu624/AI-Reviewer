@@ -1,7 +1,10 @@
 package top.yumbo.ai.reviewer.application.hackathon.service;
 
-import top.yumbo.ai.reviewer.domain.hackathon.model.*;
+import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonProject;
+import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonProjectStatus;
+import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
+import top.yumbo.ai.reviewer.domain.hackathon.model.Submission;
 import top.yumbo.ai.reviewer.domain.model.AnalysisTask;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ReviewReport;

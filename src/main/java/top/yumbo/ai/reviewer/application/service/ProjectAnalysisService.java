@@ -155,13 +155,13 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
 
     /**
      * 执行分析流程（并行优化版）
-     *
+     * <p>
      * 优化说明：
      * 1. 项目概览分析和架构分析涉及AI调用，耗时较长（3-5秒）
      * 2. 代码质量、技术债务、功能分析是本地计算，耗时短（<1秒）
      * 3. 这5个任务互不依赖，可以完全并行执行
      * 4. 只有最后的报告生成需要等待所有任务完成
-     *
+     * <p>
      * 性能提升：从串行10秒 → 并行4.5秒，提升约55%
      */
     private ReviewReport performAnalysis(AnalysisTask task) {
@@ -354,18 +354,16 @@ public class ProjectAnalysisService implements ProjectAnalysisUseCase {
      * 构建基础提示词（不使用AST）
      */
     private String buildBasicPrompt(Project project) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("请分析以下项目的整体情况：\n\n");
-        prompt.append("项目名称: ").append(project.getName()).append("\n");
-        prompt.append("项目类型: ").append(project.getType().getDisplayName()).append("\n");
-        prompt.append("文件数量: ").append(project.getSourceFiles().size()).append("\n");
-        prompt.append("代码行数: ").append(project.getTotalLines()).append("\n\n");
-        prompt.append("项目结构:\n").append(project.getStructureTree()).append("\n\n");
-        prompt.append("请输出：\n");
-        prompt.append("1. 项目的核心功能（1-2句话）\n");
-        prompt.append("2. 使用的主要技术栈\n");
-        prompt.append("3. 项目的整体架构风格\n");
-        return prompt.toString();
+        return "请分析以下项目的整体情况：\n\n" +
+                "项目名称: " + project.getName() + "\n" +
+                "项目类型: " + project.getType().getDisplayName() + "\n" +
+                "文件数量: " + project.getSourceFiles().size() + "\n" +
+                "代码行数: " + project.getTotalLines() + "\n\n" +
+                "项目结构:\n" + project.getStructureTree() + "\n\n" +
+                "请输出：\n" +
+                "1. 项目的核心功能（1-2句话）\n" +
+                "2. 使用的主要技术栈\n" +
+                "3. 项目的整体架构风格\n";
     }
 
     /**

@@ -1,15 +1,22 @@
 package top.yumbo.ai.reviewer.application.hackathon.service;
 
+import lombok.Getter;
+import lombok.Setter;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonProject;
 import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * 排行榜服务
- *
+ * <p>
  * 负责维护和查询黑客松项目排行榜
  *
  * @author AI-Reviewer Team
@@ -24,13 +31,16 @@ public class LeaderboardService {
     /**
      * 排行榜条目
      */
+    @Getter
     public static class LeaderboardEntry {
+        // Getters
         private final String projectId;
         private final String projectName;
         private final String teamName;
         private final int totalScore;
         private final String grade;
         private final HackathonScore detailedScore;
+        @Setter
         private int rank;
 
         public LeaderboardEntry(HackathonProject project) {
@@ -47,17 +57,6 @@ public class LeaderboardService {
             this.grade = score != null ? score.getGrade() : "N/A";
             this.detailedScore = score;
         }
-
-        // Getters
-        public String getProjectId() { return projectId; }
-        public String getProjectName() { return projectName; }
-        public String getTeamName() { return teamName; }
-        public int getTotalScore() { return totalScore; }
-        public String getGrade() { return grade; }
-        public HackathonScore getDetailedScore() { return detailedScore; }
-        public int getRank() { return rank; }
-
-        public void setRank(int rank) { this.rank = rank; }
 
         @Override
         public String toString() {

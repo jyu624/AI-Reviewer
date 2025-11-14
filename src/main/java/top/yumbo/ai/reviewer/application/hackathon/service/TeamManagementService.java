@@ -132,7 +132,7 @@ public class TeamManagementService {
         }
 
         // 验证 GitHub/Gitee URL 格式
-        if (!isValidGitHubUrl(githubUrl)) {
+        if (validGitUrl(githubUrl)) {
             throw new IllegalArgumentException("无效的 GitHub/Gitee URL 格式");
         }
 
@@ -177,7 +177,7 @@ public class TeamManagementService {
         }
 
         // 验证 GitHub/Gitee URL 格式
-        if (!isValidGitHubUrl(githubUrl)) {
+        if (validGitUrl(githubUrl)) {
             throw new IllegalArgumentException("无效的 GitHub/Gitee URL 格式");
         }
 
@@ -198,12 +198,12 @@ public class TeamManagementService {
     /**
      * 验证 GitHub/Gitee URL 格式
      */
-    private boolean isValidGitHubUrl(String url) {
+    private boolean validGitUrl(String url) {
         if (url == null || url.trim().isEmpty()) {
-            return false;
+            return true;
         }
         // 支持 GitHub 和 Gitee
-        return url.matches("^https?://(github\\.com|gitee\\.com)/[\\w-]+/[\\w.-]+.*$");
+        return !url.matches("^https?://(github\\.com|gitee\\.com)/[\\w-]+/[\\w.-]+.*$");
     }
 
     /**

@@ -5,9 +5,14 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
+import top.yumbo.ai.reviewer.application.hackathon.cli.HackathonCommandLineApp;
 import top.yumbo.ai.reviewer.application.port.input.ProjectAnalysisUseCase;
 import top.yumbo.ai.reviewer.application.port.input.ReportGenerationUseCase;
-import top.yumbo.ai.reviewer.domain.model.*;
+import top.yumbo.ai.reviewer.domain.model.AnalysisTask;
+import top.yumbo.ai.reviewer.domain.model.Project;
+import top.yumbo.ai.reviewer.domain.model.ProjectType;
+import top.yumbo.ai.reviewer.domain.model.ReviewReport;
+import top.yumbo.ai.reviewer.domain.model.SourceFile;
 import top.yumbo.ai.reviewer.infrastructure.config.Configuration;
 import top.yumbo.ai.reviewer.infrastructure.config.ConfigurationLoader;
 import top.yumbo.ai.reviewer.infrastructure.di.ApplicationModule;
@@ -15,6 +20,7 @@ import top.yumbo.ai.reviewer.infrastructure.di.ApplicationModule;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+
 
 /**
  * 命令行适配器 - 通用代码审查入口
@@ -27,33 +33,21 @@ import java.util.List;
  *   <li>生成多格式代码审查报告</li>
  * </ul>
  *
- * <p><b>注意：</b>黑客松评审请使用 {@link top.yumbo.ai.reviewer.application.hackathon.cli.HackathonCommandLineApp}
+ * <p><b>注意：</b>黑客松评审请使用 {@link HackathonCommandLineApp}
  *
  * @author AI-Reviewer Team
  * @version 2.0 (六边形架构重构版)
  * @since 2025-11-13
  */
 @Slf4j
-public class CommandLineAdapter {
-
-    private final ProjectAnalysisUseCase analysisUseCase;
-    private final ReportGenerationUseCase reportUseCase;
-    private final Configuration configuration;
-    private final LocalFileSystemAdapter fileSystemAdapter;
+public record CommandLineAdapter(ProjectAnalysisUseCase analysisUseCase, ReportGenerationUseCase reportUseCase,
+                                 Configuration configuration, LocalFileSystemAdapter fileSystemAdapter) {
 
     /**
      * 构造函数注入
      */
     @Inject
-    public CommandLineAdapter(
-            ProjectAnalysisUseCase analysisUseCase,
-            ReportGenerationUseCase reportUseCase,
-            Configuration configuration,
-            LocalFileSystemAdapter fileSystemAdapter) {
-        this.analysisUseCase = analysisUseCase;
-        this.reportUseCase = reportUseCase;
-        this.configuration = configuration;
-        this.fileSystemAdapter = fileSystemAdapter;
+    public CommandLineAdapter {
     }
 
     /**
@@ -189,7 +183,6 @@ public class CommandLineAdapter {
     }
 
 
-
     /**
      * 解析命令行参数
      */
@@ -268,11 +261,9 @@ public class CommandLineAdapter {
         int max = Math.max(javaCount, Math.max(pythonCount, jsCount));
         if (max == javaCount) return ProjectType.JAVA;
         if (max == pythonCount) return ProjectType.PYTHON;
-        if (max == jsCount) return ProjectType.JAVASCRIPT;
+        return ProjectType.JAVASCRIPT;
 
-        return ProjectType.UNKNOWN;
     }
-
 
 
     /**
@@ -283,6 +274,7 @@ public class CommandLineAdapter {
             String outputPath,
             String format,
             boolean async
-    ) {}
+    ) {
+    }
 }
 

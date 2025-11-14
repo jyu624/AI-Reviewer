@@ -15,7 +15,10 @@ import top.yumbo.ai.reviewer.domain.model.ast.CodeSmell;
 import top.yumbo.ai.reviewer.domain.model.ast.ComplexityMetrics;
 import top.yumbo.ai.reviewer.domain.model.ast.DesignPattern;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**

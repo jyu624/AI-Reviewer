@@ -1,12 +1,17 @@
 package top.yumbo.ai.reviewer.application.hackathon.service;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yumbo.ai.reviewer.application.port.output.CloneRequest;
 import top.yumbo.ai.reviewer.application.port.output.RepositoryPort;
-import top.yumbo.ai.reviewer.domain.hackathon.model.*;
+import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonProject;
+import top.yumbo.ai.reviewer.domain.hackathon.model.HackathonScore;
 import top.yumbo.ai.reviewer.adapter.output.filesystem.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
+import top.yumbo.ai.reviewer.domain.hackathon.model.Participant;
+import top.yumbo.ai.reviewer.domain.hackathon.model.Submission;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ProjectType;
 import top.yumbo.ai.reviewer.domain.model.ReviewReport;
@@ -263,7 +268,6 @@ public class HackathonIntegrationService {
 
         switch (latestSubmission.getStatus()) {
             case PENDING -> {
-                progress = 0;
                 phase = "等待分析";
             }
             case REVIEWING -> {
@@ -354,7 +358,9 @@ public class HackathonIntegrationService {
     /**
      * 验证结果
      */
+    @Getter
     public static class ValidationResult {
+        @Setter
         private boolean valid = true;
         private final java.util.List<String> errors = new java.util.ArrayList<>();
         private final java.util.List<String> warnings = new java.util.ArrayList<>();
@@ -366,22 +372,6 @@ public class HackathonIntegrationService {
 
         public void addWarning(String warning) {
             warnings.add(warning);
-        }
-
-        public boolean isValid() {
-            return valid;
-        }
-
-        public void setValid(boolean valid) {
-            this.valid = valid;
-        }
-
-        public java.util.List<String> getErrors() {
-            return errors;
-        }
-
-        public java.util.List<String> getWarnings() {
-            return warnings;
         }
 
         @Override
@@ -402,6 +392,7 @@ public class HackathonIntegrationService {
     /**
      * 分析进度信息
      */
+    @Getter
     public static class AnalysisProgressInfo {
         private final String projectId;
         private final int progress;  // 0-100, -1 表示失败
@@ -414,11 +405,6 @@ public class HackathonIntegrationService {
             this.phase = phase;
             this.errorMessage = errorMessage;
         }
-
-        public String getProjectId() { return projectId; }
-        public int getProgress() { return progress; }
-        public String getPhase() { return phase; }
-        public String getErrorMessage() { return errorMessage; }
 
         @Override
         public String toString() {

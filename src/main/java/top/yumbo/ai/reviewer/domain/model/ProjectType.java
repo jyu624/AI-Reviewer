@@ -1,8 +1,11 @@
 package top.yumbo.ai.reviewer.domain.model;
 
+import lombok.Getter;
+
 /**
  * 项目类型枚举
  */
+@Getter
 public enum ProjectType {
 
     JAVA("java", "Java项目"),
@@ -23,14 +26,6 @@ public enum ProjectType {
     ProjectType(String primaryLanguage, String displayName) {
         this.primaryLanguage = primaryLanguage;
         this.displayName = displayName;
-    }
-
-    public String getPrimaryLanguage() {
-        return primaryLanguage;
-    }
-
-    public String getDisplayName() {
-        return displayName;
     }
 
     /**
