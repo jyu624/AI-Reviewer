@@ -22,7 +22,9 @@
 
 ## 📖 项目简介
 
-**AI-Reviewer** 是一款采用**六边形架构（Hexagonal Architecture）**设计的企业级智能代码评审框架。它能够自动分析项目代码质量、架构设计、技术债务等多个维度，并生成详细的评审报告，特别适用于黑客松项目评分、代码质量评估、技术债务管理等场景。
+**AI-Reviewer** 是一款采用**六边形架构（Hexagonal Architecture）**设计的企业级**通用文件分析引擎**。它能够读取文件夹中的各类文件，利用市面上的AI服务进行智能分析，并生成详细的分析报告。特别适用于黑客松项目评分、代码质量评估、文档分析、技术债务管理等场景。
+
+📘 **[查看完整架构文档](./doc/ARCHITECTURE.md)** - 了解项目设计理念和扩展指南
 
 ## 🎨 框架能力与扩展指南
 
@@ -515,18 +517,26 @@ doc/
 
 ### 包结构
 
+> 📘 **详细架构说明**: 查看 [完整架构文档](./doc/ARCHITECTURE.md) 了解设计理念和扩展指南
+
 ```
 src/main/java/top/yumbo/ai/reviewer/
 │
 ├── 🎯 domain/                          # 领域层 - 核心业务逻辑
+│   ├── model/                          # 核心领域模型
+│   │   ├── Project.java
+│   │   ├── ReviewReport.java
+│   │   ├── SourceFile.java
+│   │   ├── ProjectMetadata.java
+│   │   ├── ProjectType.java
+│   │   └── ast/                        # AST相关模型
+│   │       ├── CodeInsight.java
+│   │       ├── ClassStructure.java
+│   │       ├── MethodInfo.java
+│   │       ├── ComplexityMetrics.java
+│   │       ├── CodeSmell.java
+│   │       └── DesignPattern.java
 │   ├── core/                           # 核心领域
-│   │   ├── model/                      # 核心领域模型
-│   │   │   ├── Project.java
-│   │   │   ├── ReviewReport.java
-│   │   │   ├── AnalysisTask.java
-│   │   │   ├── SourceFile.java
-│   │   │   ├── ProjectMetadata.java
-│   │   │   └── AnalysisProgress.java
 │   │   └── exception/                  # 统一异常体系
 │   │       ├── DomainException.java
 │   │       ├── TechnicalException.java
@@ -542,7 +552,8 @@ src/main/java/top/yumbo/ai/reviewer/
 │           ├── Team.java
 │           ├── Participant.java
 │           ├── Submission.java
-│           └── HackathonScore.java
+│           ├── HackathonScore.java
+│           └── DimensionScoringRegistry.java
 │
 ├── 📋 application/                      # 应用层 - 用例编排
 │   ├── service/                         # 核心应用服务
@@ -550,13 +561,19 @@ src/main/java/top/yumbo/ai/reviewer/
 │   │   ├── ReportGenerationService.java
 │   │   ├── QualityGateEngine.java
 │   │   ├── AIModelSelector.java
-│   │   └── ComparisonReportGenerator.java
-│   ├── hackathon/service/               # 黑客松应用服务
-│   │   ├── HackathonAnalysisService.java
-│   │   ├── HackathonScoringService.java
-│   │   ├── HackathonIntegrationService.java
-│   │   ├── LeaderboardService.java
-│   │   └── TeamManagementService.java
+│   │   ├── ComparisonReportGenerator.java
+│   │   └── prompt/
+│   │       └── AIPromptBuilder.java
+│   ├── hackathon/                       # 黑客松应用
+│   │   ├── service/                     # 黑客松应用服务
+│   │   │   ├── HackathonAnalysisService.java
+│   │   │   ├── HackathonScoringService.java
+│   │   │   ├── HackathonIntegrationService.java
+│   │   │   ├── LeaderboardService.java
+│   │   │   └── TeamManagementService.java
+│   │   └── cli/                         # 黑客松CLI
+│   │       ├── HackathonCommandLineApp.java
+│   │       └── HackathonInteractiveApp.java
 │   └── port/                            # 端口接口
 │       ├── input/                       # 输入端口（用例接口）
 │       │   ├── ProjectAnalysisUseCase.java
@@ -564,44 +581,92 @@ src/main/java/top/yumbo/ai/reviewer/
 │       └── output/                      # 输出端口（外部依赖接口）
 │           ├── RepositoryPort.java      # 统一仓库接口
 │           ├── AIServicePort.java       # AI服务接口
+│           ├── ASTParserPort.java       # AST解析器接口
 │           ├── FileSystemPort.java      # 文件系统接口
 │           ├── CachePort.java           # 缓存接口
+│           ├── S3StoragePort.java       # S3存储接口
 │           ├── CloneRequest.java        # 值对象
 │           └── RepositoryMetrics.java   # 值对象
 │
-└── 🔌 adapter/                          # 适配器层 - 技术实现
-    ├── input/                           # 输入适配器
-    │   ├── cli/                         # 命令行界面
-    │   │   ├── CommandLineAdapter.java
-    │   │   └── CommandLineInterface.java
-    │   ├── api/                         # REST API
-    │   │   └── APIAdapter.java
-    │   └── hackathon/                   # 黑客松入口
-    │       └── adapter/output/
-    │           ├── github/
-    │           │   └── GitHubAdapter.java
-    │           └── gitee/
-    │               └── GiteeAdapter.java
-    └── output/                          # 输出适配器
-        ├── ai/                          # AI服务适配器
-        │   ├── DeepSeekAIAdapter.java
-        │   ├── OpenAIAdapter.java
-        │   ├── GeminiAdapter.java
-        │   └── ClaudeAdapter.java
-        ├── cache/                       # 缓存适配器
-        │   └── FileCacheAdapter.java
-        ├── filesystem/                  # 文件系统适配器
-        │   ├── LocalFileSystemAdapter.java
-        │   └── detector/                # 语言检测器
-        │       ├── LanguageDetector.java
-        │       ├── GoLanguageDetector.java
-        │       ├── RustLanguageDetector.java
-        │       └── CppLanguageDetector.java
-        ├── visualization/               # 可视化适配器
-        │   └── ChartGenerator.java
-        └── cicd/                        # CI/CD集成
-            └── CICDIntegration.java
+├── 🔌 adapter/                          # 适配器层 - 技术实现
+│   ├── input/                           # 输入适配器
+│   │   ├── cli/                         # 命令行界面
+│   │   │   ├── CommandLineAdapter.java
+│   │   │   └── CommandLineInterface.java
+│   │   └── api/                         # REST API
+│   │       └── APIAdapter.java
+│   │
+│   ├── storage/                         # ✨ 存储模块（重构后）
+│   │   ├── s3/                          # AWS S3存储
+│   │   │   ├── S3StorageAdapter.java
+│   │   │   ├── S3StorageConfig.java
+│   │   │   └── S3StorageExample.java
+│   │   ├── local/                       # 本地文件系统
+│   │   │   └── LocalFileSystemAdapter.java
+│   │   ├── cache/                       # 缓存
+│   │   │   └── FileCacheAdapter.java
+│   │   └── archive/                     # 压缩归档
+│   │       └── ZipArchiveAdapter.java
+│   │
+│   ├── ai/                              # ✨ AI服务模块（重构后）
+│   │   ├── bedrock/                     # AWS Bedrock
+│   │   │   └── BedrockAdapter.java
+│   │   ├── config/                      # AI配置
+│   │   │   └── AIServiceConfig.java
+│   │   ├── http/                        # HTTP通用客户端
+│   │   │   └── HttpBasedAIAdapter.java
+│   │   ├── decorator/                   # 装饰器
+│   │   │   └── LoggingAIServiceDecorator.java
+│   │   └── AIAdapterFactory.java        # AI适配器工厂
+│   │
+│   ├── parser/                          # ✨ 解析器模块（重构后）
+│   │   ├── code/                        # 代码解析器
+│   │   │   ├── AbstractASTParser.java
+│   │   │   ├── ASTParserFactory.java
+│   │   │   ├── java/
+│   │   │   │   └── JavaParserAdapter.java
+│   │   │   ├── python/
+│   │   │   │   └── PythonParserAdapter.java
+│   │   │   ├── javascript/
+│   │   │   │   └── JavaScriptParserAdapter.java
+│   │   │   ├── go/
+│   │   │   │   └── GoParserAdapter.java
+│   │   │   └── cpp/
+│   │   │       └── CppParserAdapter.java
+│   │   └── detector/                    # 语言检测器
+│   │       ├── LanguageDetector.java
+│   │       ├── LanguageDetectorRegistry.java
+│   │       ├── LanguageFeatures.java
+│   │       └── language/                # 具体检测器
+│   │           ├── GoLanguageDetector.java
+│   │           ├── CppLanguageDetector.java
+│   │           └── RustLanguageDetector.java
+│   │
+│   ├── repository/                      # ✨ 仓库模块（重构后）
+│   │   └── git/
+│   │       └── GitRepositoryAdapter.java
+│   │
+│   └── output/                          # 输出适配器
+│       ├── cicd/                        # CI/CD集成
+│       │   └── CICDIntegration.java
+│       └── visualization/               # 可视化
+│           └── ChartGenerator.java
+│
+└── 🏗️ infrastructure/                   # 基础设施层
+    ├── config/                          # 配置管理
+    │   ├── Configuration.java
+    │   └── ConfigurationLoader.java
+    ├── di/                              # 依赖注入
+    │   └── ApplicationModule.java
+    └── factory/                         # 工厂类
+        └── AIServiceFactory.java
 ```
+
+**架构重构亮点** ✨:
+- ✅ 功能模块化：按功能领域组织（storage、ai、parser、repository）
+- ✅ 职责清晰：每个包有明确的功能定位
+- ✅ 易于扩展：新增功能只需在对应模块添加类
+- ✅ 符合DDD：领域驱动设计原则
 
 ### 核心设计模式
 
