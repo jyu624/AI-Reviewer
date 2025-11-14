@@ -2,6 +2,7 @@ package top.yumbo.ai.reviewer.adapter.output.ai;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -13,6 +14,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 import top.yumbo.ai.reviewer.application.port.output.AIServicePort;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,9 +31,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BedrockAdapter implements AIServicePort {
 
     private final BedrockRuntimeClient bedrockClient;
+    @Getter
     private final String modelId;
     private final int maxTokens;
     private final double temperature;
+    @Getter
     private final String region;
 
     private final ExecutorService executorService;
@@ -57,7 +62,7 @@ public class BedrockAdapter implements AIServicePort {
 
         // 获取超时配置（代码分析任务需要较长时间）
         int apiCallTimeout = config.readTimeoutMillis() > 0 ? config.readTimeoutMillis() : 120000; // 默认 120 秒
-        int apiCallAttemptTimeout = apiCallTimeout; // 每次尝试的超时时间
+        // 去掉冗余的 apiCallAttemptTimeout，本处直接复用 apiCallTimeout
 
         // 初始化 Bedrock 客户端
         var clientBuilder = BedrockRuntimeClient.builder()
@@ -83,7 +88,7 @@ public class BedrockAdapter implements AIServicePort {
         // 配置超时时间（解决 Read timeout 问题）
         clientBuilder.overrideConfiguration(builder -> builder
                 .apiCallTimeout(java.time.Duration.ofMillis(apiCallTimeout))
-                .apiCallAttemptTimeout(java.time.Duration.ofMillis(apiCallAttemptTimeout))
+                .apiCallAttemptTimeout(java.time.Duration.ofMillis(apiCallTimeout))
                 .retryPolicy(retry -> retry
                         .numRetries(maxRetries)
                 )
@@ -92,20 +97,16 @@ public class BedrockAdapter implements AIServicePort {
         this.bedrockClient = clientBuilder.build();
 
         log.info("AWS Bedrock 客户端超时配置: API调用超时={}ms, 每次尝试超时={}ms",
-                apiCallTimeout, apiCallAttemptTimeout);
+                apiCallTimeout, apiCallTimeout);
 
         // 配置线程池
+        final AtomicInteger threadNumber = new AtomicInteger(1);
         this.executorService = Executors.newFixedThreadPool(
                 maxConcurrency,
-                new ThreadFactory() {
-                    private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread t = new Thread(r, "bedrock-analyzer-" + threadNumber.getAndIncrement());
-                        t.setDaemon(true);
-                        return t;
-                    }
+                r -> {
+                    Thread t = new Thread(r, "bedrock-analyzer-" + threadNumber.getAndIncrement());
+                    t.setDaemon(true);
+                    return t;
                 }
         );
 
@@ -149,17 +150,19 @@ public class BedrockAdapter implements AIServicePort {
 
     @Override
     public CompletableFuture<String[]> analyzeBatchAsync(String[] prompts) {
-        CompletableFuture<String>[] futures = new CompletableFuture[prompts.length];
-        for (int i = 0; i < prompts.length; i++) {
-            futures[i] = analyzeAsync(prompts[i]);
+        List<CompletableFuture<String>> futures = new ArrayList<>(prompts.length);
+        for (String p : prompts) {
+            futures.add(analyzeAsync(p));
         }
 
-        return CompletableFuture.allOf(futures)
+        CompletableFuture<?>[] futuresArray = futures.toArray(new CompletableFuture<?>[0]);
+
+        return CompletableFuture.allOf(futuresArray)
                 .thenApply(v -> {
                     String[] results = new String[prompts.length];
                     for (int i = 0; i < prompts.length; i++) {
                         try {
-                            results[i] = futures[i].join();
+                            results[i] = futures.get(i).join();
                         } catch (Exception e) {
                             log.error("批量分析第 {} 个任务失败", i, e);
                             results[i] = "分析失败: " + e.getMessage();
@@ -179,7 +182,7 @@ public class BedrockAdapter implements AIServicePort {
             if (retryCount < maxRetries) {
                 log.warn("分析失败，第 {} 次重试 - 错误: {}", retryCount + 1, e.getMessage());
                 try {
-                    Thread.sleep(retryDelayMillis * (retryCount + 1));
+                    Thread.sleep((long) retryDelayMillis * (retryCount + 1));
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("重试等待被中断", ie);
@@ -619,20 +622,6 @@ public class BedrockAdapter implements AIServicePort {
      */
     public int getActiveRequests() {
         return activeRequests.get();
-    }
-
-    /**
-     * 获取模型 ID
-     */
-    public String getModelId() {
-        return modelId;
-    }
-
-    /**
-     * 获取区域
-     */
-    public String getRegion() {
-        return region;
     }
 }
 
