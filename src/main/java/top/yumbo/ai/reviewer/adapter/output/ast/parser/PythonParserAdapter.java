@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
  * @since 2025-11-13
  */
 @Slf4j
+@SuppressWarnings("unused")
 public class PythonParserAdapter extends AbstractASTParser {
 
     // Python语法正则表达式
@@ -220,7 +221,6 @@ public class PythonParserAdapter extends AbstractASTParser {
             return null;
         }
 
-        boolean isAsync = matcher.group(1).equals("async def");
         String methodName = matcher.group(2);
         String params = matcher.group(3);
 
@@ -403,4 +403,3 @@ public class PythonParserAdapter extends AbstractASTParser {
         return "PythonParser";
     }
 }
-

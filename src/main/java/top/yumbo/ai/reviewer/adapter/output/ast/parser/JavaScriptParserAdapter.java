@@ -24,14 +24,17 @@ import java.util.regex.Pattern;
  * @since 2025-11-13
  */
 @Slf4j
+@SuppressWarnings("unused")
 public class JavaScriptParserAdapter extends AbstractASTParser {
 
     // JavaScript/TypeScript语法正则表达式
     private static final Pattern CLASS_PATTERN = Pattern.compile("^\\s*(?:export\\s+)?(?:default\\s+)?class\\s+(\\w+)(?:\\s+extends\\s+(\\w+))?");
     private static final Pattern FUNCTION_PATTERN = Pattern.compile("^\\s*(?:export\\s+)?(?:async\\s+)?function\\s+(\\w+)\\s*\\(([^)]*)\\)");
     private static final Pattern METHOD_PATTERN = Pattern.compile("^\\s*(?:async\\s+)?(\\w+)\\s*\\(([^)]*)\\)\\s*\\{");
+    @SuppressWarnings("unused")
     private static final Pattern ARROW_FUNCTION_PATTERN = Pattern.compile("(const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?\\(([^)]*)\\)\\s*=>");
     private static final Pattern INTERFACE_PATTERN = Pattern.compile("^\\s*(?:export\\s+)?interface\\s+(\\w+)");
+    @SuppressWarnings("unused")
     private static final Pattern TYPE_PATTERN = Pattern.compile("^\\s*(?:export\\s+)?type\\s+(\\w+)");
     private static final Pattern DECORATOR_PATTERN = Pattern.compile("^\\s*@(\\w+)");
 
@@ -461,4 +464,3 @@ public class JavaScriptParserAdapter extends AbstractASTParser {
         return "JavaScriptParser";
     }
 }
-

@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 
 /**
  * C/C++解析器适配器
- *
+ * <p>
  * 支持C/C++的类、函数、方法等解析
  * 注：这是一个简化实现，生产环境建议使用libclang或ANTLR4
  *
@@ -314,7 +314,6 @@ public class CppParserAdapter extends AbstractASTParser {
         String paramsStr = matcher.group(3);
 
         boolean isStatic = line.contains("static");
-        boolean isVirtual = line.contains("virtual");
 
         MethodInfo.MethodInfoBuilder builder = MethodInfo.builder()
             .methodName(methodName)
@@ -511,4 +510,3 @@ public class CppParserAdapter extends AbstractASTParser {
         return "CppParser";
     }
 }
-

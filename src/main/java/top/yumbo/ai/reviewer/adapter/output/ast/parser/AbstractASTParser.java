@@ -5,14 +5,11 @@ import top.yumbo.ai.reviewer.application.port.output.ASTParserPort;
 import top.yumbo.ai.reviewer.domain.model.Project;
 import top.yumbo.ai.reviewer.domain.model.ast.*;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * AST解析器抽象基类
- *
+ * <p>
  * 提供通用的解析逻辑和模板方法，消除子类中的重复代码
  *
  * @author AI-Reviewer Team
@@ -132,17 +129,14 @@ public abstract class AbstractASTParser implements ASTParserPort {
             }
 
             // 添加接口依赖
-            cls.getInterfaces().forEach(intf -> {
-                graph.addDependency(className, intf);
-            });
+            cls.getInterfaces().forEach(intf -> graph.addDependency(className, intf));
 
             // 添加字段类型依赖（如果存在）
             if (cls.getFields() != null) {
-                cls.getFields().forEach(field -> {
-                    if (field.getType() != null) {
-                        graph.addDependency(className, field.getType());
-                    }
-                });
+                cls.getFields().stream()
+                    .map(FieldInfo::getType)
+                    .filter(Objects::nonNull)
+                    .forEach(t -> graph.addDependency(className, t));
             }
         }
 
@@ -179,6 +173,13 @@ public abstract class AbstractASTParser implements ASTParserPort {
     }
 
     /**
+     * 兼容旧的2参数calculateStatistics签名，委托到3参数实现（interfaces为null）
+     */
+    protected CodeStatistics calculateStatistics(Project project, List<ClassStructure> classes) {
+        return calculateStatistics(project, classes, null);
+    }
+
+    /**
      * 计算复杂度指标（所有解析器通用）
      */
     protected ComplexityMetrics calculateComplexityMetrics(List<ClassStructure> classes) {
@@ -201,29 +202,17 @@ public abstract class AbstractASTParser implements ASTParserPort {
 
         MethodInfo mostComplex = allMethods.stream()
             .max(Comparator.comparingInt(MethodInfo::getCyclomaticComplexity))
-            .orElse(null);
+            .get(); // safe: allMethods is non-empty
 
-        long highComplexityCount = allMethods.stream()
-            .filter(MethodInfo::isComplexMethod)
-            .count();
-
-        double avgLength = allMethods.stream()
-            .mapToInt(MethodInfo::getLinesOfCode)
-            .average()
-            .orElse(0.0);
-
-        long longMethodCount = allMethods.stream()
-            .filter(MethodInfo::isLongMethod)
-            .count();
-
-        long tooManyParamsCount = allMethods.stream()
-            .filter(MethodInfo::hasTooManyParameters)
-            .count();
+        long highComplexityCount = allMethods.stream().filter(MethodInfo::isComplexMethod).count();
+        double avgLength = allMethods.stream().mapToInt(MethodInfo::getLinesOfCode).average().orElse(0.0);
+        long longMethodCount = allMethods.stream().filter(MethodInfo::isLongMethod).count();
+        long tooManyParamsCount = allMethods.stream().filter(MethodInfo::hasTooManyParameters).count();
 
         return ComplexityMetrics.builder()
             .avgCyclomaticComplexity(avgComplexity)
-            .maxCyclomaticComplexity(mostComplex != null ? mostComplex.getCyclomaticComplexity() : 0)
-            .mostComplexMethod(mostComplex != null ? mostComplex.getMethodName() : "N/A")
+            .maxCyclomaticComplexity(mostComplex.getCyclomaticComplexity())
+            .mostComplexMethod(mostComplex.getMethodName())
             .highComplexityMethodCount((int) highComplexityCount)
             .avgMethodLength(avgLength)
             .longMethodCount((int) longMethodCount)
@@ -239,9 +228,7 @@ public abstract class AbstractASTParser implements ASTParserPort {
     protected void detectCodeSmells(CodeInsight insight) {
         insight.getClasses().forEach(cls -> {
             // 检测方法级别的坏味道
-            cls.getMethods().forEach(method -> {
-                method.getSmells().forEach(insight::addCodeSmell);
-            });
+            cls.getMethods().forEach(method -> method.getSmells().forEach(insight::addCodeSmell));
 
             // 检测类级别的坏味道 - God Class（上帝类）
             if (cls.getMethodCount() > 20) {
@@ -272,7 +259,7 @@ public abstract class AbstractASTParser implements ASTParserPort {
                     m.getMethodName().toLowerCase().contains("instance")
                 );
 
-            if (hasSingletonMethod && cls.getMethods().stream().anyMatch(m -> m.isStatic())) {
+            if (hasSingletonMethod && cls.getMethods().stream().anyMatch(MethodInfo::isStatic)) {
                 singletonPattern.addInstance(cls.getClassName());
             }
         }
@@ -377,4 +364,3 @@ public abstract class AbstractASTParser implements ASTParserPort {
         return patterns;
     }
 }
-

@@ -163,39 +163,26 @@ public class JavaParserAdapter extends AbstractASTParser {
         }
 
         // 继承关系
-        classDecl.getExtendedTypes().forEach(type -> {
-            builder.superClass(type.getNameAsString());
-        });
+        classDecl.getExtendedTypes().forEach(type -> builder.superClass(type.getNameAsString()));
 
         // 实现的接口
         List<String> implementedInterfaces = new ArrayList<>();
-        classDecl.getImplementedTypes().forEach(type -> {
-            implementedInterfaces.add(type.getNameAsString());
-        });
+        classDecl.getImplementedTypes().forEach(type -> implementedInterfaces.add(type.getNameAsString()));
         builder.interfaces(implementedInterfaces);
 
         // 注解
         List<String> annotations = new ArrayList<>();
-        classDecl.getAnnotations().forEach(ann -> {
-            annotations.add(ann.getNameAsString());
-        });
+        classDecl.getAnnotations().forEach(ann -> annotations.add(ann.getNameAsString()));
         builder.annotations(annotations);
 
         ClassStructure classStructure = builder.build();
 
         // 解析字段
-        classDecl.getFields().forEach(field -> {
-            field.getVariables().forEach(variable -> {
-                FieldInfo fieldInfo = parseField(variable, field);
-                classStructure.addField(fieldInfo);
-            });
-        });
+        classDecl.getFields().forEach(field -> field.getVariables()
+            .forEach(variable -> classStructure.addField(parseField(variable, field))));
 
         // 解析方法
-        classDecl.getMethods().forEach(method -> {
-            MethodInfo methodInfo = parseMethod(method);
-            classStructure.addMethod(methodInfo);
-        });
+        classDecl.getMethods().forEach(method -> classStructure.addMethod(parseMethod(method)));
 
         // 计算代码行数
         classStructure.setLinesOfCode(
@@ -220,18 +207,13 @@ public class JavaParserAdapter extends AbstractASTParser {
 
         // 扩展的接口
         List<String> extendedInterfaces = new ArrayList<>();
-        interfaceDecl.getExtendedTypes().forEach(type -> {
-            extendedInterfaces.add(type.getNameAsString());
-        });
+        interfaceDecl.getExtendedTypes().forEach(type -> extendedInterfaces.add(type.getNameAsString()));
         builder.extendedInterfaces(extendedInterfaces);
 
         InterfaceStructure interfaceStructure = builder.build();
 
         // 解析方法
-        interfaceDecl.getMethods().forEach(method -> {
-            MethodInfo methodInfo = parseMethod(method);
-            interfaceStructure.addMethod(methodInfo);
-        });
+        interfaceDecl.getMethods().forEach(method -> interfaceStructure.addMethod(parseMethod(method)));
 
         return interfaceStructure;
     }
@@ -282,27 +264,21 @@ public class JavaParserAdapter extends AbstractASTParser {
 
         // 解析参数
         List<MethodInfo.Parameter> parameters = new ArrayList<>();
-        method.getParameters().forEach(param -> {
-            parameters.add(MethodInfo.Parameter.builder()
+        method.getParameters().forEach(param -> parameters.add(MethodInfo.Parameter.builder()
                 .name(param.getNameAsString())
                 .type(param.getTypeAsString())
                 .isFinal(param.isFinal())
-                .build());
-        });
+                .build()));
         builder.parameters(parameters);
 
         // 抛出的异常
         List<String> exceptions = new ArrayList<>();
-        method.getThrownExceptions().forEach(ex -> {
-            exceptions.add(ex.asString());
-        });
+        method.getThrownExceptions().forEach(ex -> exceptions.add(ex.asString()));
         builder.throwsExceptions(exceptions);
 
         // 注解
         List<String> annotations = new ArrayList<>();
-        method.getAnnotations().forEach(ann -> {
-            annotations.add(ann.getNameAsString());
-        });
+        method.getAnnotations().forEach(ann -> annotations.add(ann.getNameAsString()));
         builder.annotations(annotations);
 
         // 计算代码行数
@@ -365,9 +341,7 @@ public class JavaParserAdapter extends AbstractASTParser {
         return ClassStructure.AccessModifier.PACKAGE_PRIVATE;
     }
 
-    /**
-     * 构建项目结构
-     */
+
     /**
      * 检测建造者模式（Java特有：检测Lombok @Builder注解）
      */
@@ -426,4 +400,3 @@ public class JavaParserAdapter extends AbstractASTParser {
         return "JavaParser";
     }
 }
-
