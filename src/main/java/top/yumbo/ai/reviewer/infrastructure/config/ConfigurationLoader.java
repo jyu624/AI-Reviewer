@@ -65,7 +65,26 @@ public class ConfigurationLoader {
      */
     private static void loadFromYaml(Configuration config) {
         try {
-            // 优先级 1: 从系统属性 -Dconfig 指定的路径加载
+            // 优先级 1: 从 classpath 加载
+            InputStream inputStream = ConfigurationLoader.class.getClassLoader()
+                    .getResourceAsStream(DEFAULT_CONFIG_FILE);
+
+            if (inputStream != null) {
+                ConfigYaml yaml = YAML_MAPPER.readValue(inputStream, ConfigYaml.class);
+                applyYamlConfig(config, yaml);
+                log.info("配置已从 classpath:{} 加载", DEFAULT_CONFIG_FILE);
+                return;
+            }
+
+            // 优先级 2: 从当前目录的文件系统加载
+            Path configPath = Paths.get(DEFAULT_CONFIG_FILE);
+            if (Files.exists(configPath)) {
+                ConfigYaml yaml = YAML_MAPPER.readValue(configPath.toFile(), ConfigYaml.class);
+                applyYamlConfig(config, yaml);
+                log.info("配置已从文件 {} 加载", configPath.toAbsolutePath());
+                return;
+            }
+            // 优先级 3: 从系统属性 -Dconfig 指定的路径加载
             String configPathFromProperty = System.getProperty("config");
             if (configPathFromProperty != null && !configPathFromProperty.isBlank()) {
                 Path customConfigPath = Paths.get(configPathFromProperty);
@@ -78,27 +97,6 @@ public class ConfigurationLoader {
                     log.warn("自定义配置文件不存在: {}，尝试其他路径", customConfigPath);
                 }
             }
-
-            // 优先级 2: 从 classpath 加载
-            InputStream inputStream = ConfigurationLoader.class.getClassLoader()
-                    .getResourceAsStream(DEFAULT_CONFIG_FILE);
-
-            if (inputStream != null) {
-                ConfigYaml yaml = YAML_MAPPER.readValue(inputStream, ConfigYaml.class);
-                applyYamlConfig(config, yaml);
-                log.info("配置已从 classpath:{} 加载", DEFAULT_CONFIG_FILE);
-                return;
-            }
-
-            // 优先级 3: 从当前目录的文件系统加载
-            Path configPath = Paths.get(DEFAULT_CONFIG_FILE);
-            if (Files.exists(configPath)) {
-                ConfigYaml yaml = YAML_MAPPER.readValue(configPath.toFile(), ConfigYaml.class);
-                applyYamlConfig(config, yaml);
-                log.info("配置已从文件 {} 加载", configPath.toAbsolutePath());
-                return;
-            }
-
             log.warn("未找到配置文件 {}，使用默认配置", DEFAULT_CONFIG_FILE);
 
         } catch (Exception e) {
