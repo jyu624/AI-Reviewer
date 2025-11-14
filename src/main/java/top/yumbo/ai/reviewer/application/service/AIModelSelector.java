@@ -17,7 +17,6 @@ public class AIModelSelector {
     private final Map<String, AIServicePort> models = new ConcurrentHashMap<>();
     private final List<String> fallbackOrder = new ArrayList<>();
     private String primaryModel;
-    private boolean costOptimization = true;
     private String loadBalancingStrategy = "round-robin";
     private final AtomicInteger roundRobinCounter = new AtomicInteger(0);
 
@@ -50,7 +49,6 @@ public class AIModelSelector {
      * 设置成本优化
      */
     public void setCostOptimization(boolean enabled) {
-        this.costOptimization = enabled;
         log.info("成本优化{}", enabled ? "已启用" : "已禁用");
     }
 
@@ -124,24 +122,22 @@ public class AIModelSelector {
             throw new RuntimeException("没有可用的AI模型");
         }
 
-        switch (loadBalancingStrategy) {
-            case "round-robin":
+        return switch (loadBalancingStrategy) {
+            case "round-robin" -> {
                 int index = roundRobinCounter.getAndIncrement() % available.size();
-                return available.get(index);
-
-            case "random":
+                yield available.get(index);
+            }
+            case "random" -> {
                 Random random = new Random();
-                return available.get(random.nextInt(available.size()));
-
-            case "least-cost":
+                yield available.get(random.nextInt(available.size()));
+            }
+            case "least-cost" ->
                 // 选择成本最低的模型（简化实现）
-                return available.stream()
-                        .min(Comparator.comparing(m -> estimateModelCost(m.getProviderName())))
-                        .orElse(available.get(0));
-
-            default:
-                return available.get(0);
-        }
+                    available.stream()
+                            .min(Comparator.comparing(m -> estimateModelCost(m.getProviderName())))
+                            .orElse(available.get(0));
+            default -> available.get(0);
+        };
     }
 
     /**
@@ -162,26 +158,21 @@ public class AIModelSelector {
      */
     public AIServicePort getBestModelForTask(String taskType) {
         // 根据任务类型推荐模型
-        switch (taskType) {
-            case "large-context":
+        return switch (taskType) {
+            case "large-context" ->
                 // Claude适合处理大上下文
-                return models.get("claude");
-
-            case "code-generation":
+                    models.get("claude");
+            case "code-generation" ->
                 // GPT-4适合代码生成
-                return models.get("openai");
-
-            case "quick-analysis":
+                    models.get("openai");
+            case "quick-analysis" ->
                 // DeepSeek或Gemini适合快速分析
-                return models.getOrDefault("gemini", models.get("deepseek"));
-
-            case "cost-sensitive":
+                    models.getOrDefault("gemini", models.get("deepseek"));
+            case "cost-sensitive" ->
                 // Gemini免费或DeepSeek成本较低
-                return models.getOrDefault("gemini", models.get("deepseek"));
-
-            default:
-                return selectModel();
-        }
+                    models.getOrDefault("gemini", models.get("deepseek"));
+            default -> selectModel();
+        };
     }
 
     /**
@@ -189,18 +180,13 @@ public class AIModelSelector {
      */
     public double estimateModelCost(String modelName) {
         // 返回相对成本分数（0-100）
-        switch (modelName.toLowerCase()) {
-            case "gemini":
-                return 0.0; // 免费
-            case "deepseek":
-                return 10.0; // 很便宜
-            case "openai":
-                return 50.0; // 中等
-            case "claude":
-                return 70.0; // 较贵
-            default:
-                return 50.0;
-        }
+        return switch (modelName.toLowerCase()) {
+            case "gemini" -> 0.0; // 免费
+            case "deepseek" -> 10.0; // 很便宜
+            case "openai" -> 50.0; // 中等
+            case "claude" -> 70.0; // 较贵
+            default -> 50.0;
+        };
     }
 
     /**

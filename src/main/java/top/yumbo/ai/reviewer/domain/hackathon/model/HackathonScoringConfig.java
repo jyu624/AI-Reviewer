@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * 黑客松评分配置（支持动态扩展）
- *
+ * <p>
  * 特性：
  * 1. 支持任意数量的评分维度
  * 2. 支持动态添加自定义评分规则
@@ -27,7 +27,7 @@ public class HackathonScoringConfig {
 
     /**
      * 动态评分维度权重映射
-     *
+     * <p>
      * 示例：
      * {
      *   "code_quality": 0.40,

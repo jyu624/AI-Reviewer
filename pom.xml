@@ -236,7 +236,7 @@
                     <!-- use project-local config to control strictness -->
                     <configLocation>config/checkstyle/checkstyle.xml</configLocation>
                     <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
-                    <encoding>UTF-8</encoding>
+                    <!--<encoding>UTF-8</encoding>-->
                     <!-- Do not fail the build on violations; we'll iteratively fix them -->
                     <failOnViolation>false</failOnViolation>
                     <consoleOutput>true</consoleOutput>
@@ -280,7 +280,9 @@
                         <property>
                             <name>https.nonProxyHosts</name>
                             <!-- 按需添加你的内部域名、本地地址等，用|分隔 -->
-                            <value>localhost|127.0.0.1|*.anthropic.com|*.openai.*|*.googleapis.com|*.deepseek.*|*.aliyun.com|*.spring.*|*.baidu.com|*.google.com|*</value>
+                            <value>
+                                localhost|127.0.0.1|*.anthropic.com|*.openai.*|*.googleapis.com|*.deepseek.*|*.aliyun.com|*.spring.*|*.baidu.com|*.google.com|*
+                            </value>
                         </property>
                     </systemProperties>
                     <useModulePath>false</useModulePath>
@@ -298,7 +300,8 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter</mainClass>
                                 </transformer>
                             </transformers>

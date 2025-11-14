@@ -3,11 +3,12 @@ package top.yumbo.ai.reviewer.domain.hackathon.model;
 import lombok.Data;
 import lombok.Builder;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 黑客松评分规则定义
- *
+ * <p>
  * 支持动态添加自定义评分规则
  *
  * @author AI-Reviewer Team
