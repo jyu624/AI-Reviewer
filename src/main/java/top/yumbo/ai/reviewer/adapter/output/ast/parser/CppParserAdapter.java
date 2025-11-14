@@ -2,17 +2,13 @@ package top.yumbo.ai.reviewer.adapter.output.ast.parser;
 
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.domain.model.Project;
-import top.yumbo.ai.reviewer.domain.model.ProjectType;
 import top.yumbo.ai.reviewer.domain.model.SourceFile;
-import top.yumbo.ai.reviewer.domain.model.ast.ClassInfo;
-import top.yumbo.ai.reviewer.domain.model.ast.CodeInsight;
-import top.yumbo.ai.reviewer.domain.model.ast.MethodInfo;
+import top.yumbo.ai.reviewer.domain.model.ast.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,8 +75,8 @@ public class CppParserAdapter extends AbstractASTParser {
         DependencyGraph dependencyGraph = buildDependencyGraph(classes);
         builder.dependencyGraph(dependencyGraph);
 
-        // 计算统计信息
-        CodeStatistics statistics = calculateStatistics(project, classes);
+        // 计算统计信息（C++ 没有接口概念，传 null）
+        CodeStatistics statistics = calculateStatistics(project, classes, null);
         builder.statistics(statistics);
 
         CodeInsight insight = builder.build();
@@ -495,195 +491,7 @@ public class CppParserAdapter extends AbstractASTParser {
         return "global";
     }
 
-    private ProjectStructure buildProjectStructure(List<ClassStructure> classes,
-                                                   Map<String, Integer> packageClassCount) {
-        if (classes.isEmpty()) {
-            return ProjectStructure.builder().build();
-        }
 
-        String rootPackage = classes.get(0).getPackageName();
-
-        ProjectStructure.ProjectStructureBuilder builder = ProjectStructure.builder()
-            .rootPackage(rootPackage);
-
-        Map<String, ProjectStructure.PackageInfo> packages = new HashMap<>();
-        packageClassCount.forEach((pkg, count) -> {
-            ProjectStructure.PackageInfo packageInfo = ProjectStructure.PackageInfo.builder()
-                .name(pkg)
-                .classCount(count)
-                .build();
-            packages.put(pkg, packageInfo);
-        });
-
-        builder.packages(packages);
-
-        ProjectStructure structure = builder.build();
-        structure.detectArchitectureStyle();
-
-        return structure;
-    }
-
-    private DependencyGraph buildDependencyGraph(List<ClassStructure> classes) {
-        DependencyGraph graph = DependencyGraph.builder().build();
-
-        for (ClassStructure cls : classes) {
-            String className = cls.getFullQualifiedName();
-
-            if (cls.getSuperClass() != null) {
-                graph.addDependency(className, cls.getSuperClass());
-            }
-
-            cls.getFields().forEach(field -> {
-                graph.addDependency(className, field.getType());
-            });
-        }
-
-        return graph;
-    }
-
-    private CodeStatistics calculateStatistics(Project project, List<ClassStructure> classes) {
-        int totalMethods = classes.stream()
-            .mapToInt(ClassStructure::getMethodCount)
-            .sum();
-
-        int totalFields = classes.stream()
-            .mapToInt(ClassStructure::getFieldCount)
-            .sum();
-
-        return CodeStatistics.builder()
-            .totalFiles(project.getSourceFiles().size())
-            .totalClasses(classes.size())
-            .totalMethods(totalMethods)
-            .totalFields(totalFields)
-            .totalLines(project.getTotalLines())
-            .build();
-    }
-
-    private DesignPatterns detectDesignPatterns(List<ClassStructure> classes) {
-        DesignPatterns patterns = DesignPatterns.builder().build();
-
-        // 检测单例模式（getInstance方法 + private构造函数）
-        detectSingletonPattern(classes, patterns);
-
-        // 检测工厂模式（create方法）
-        detectFactoryPattern(classes, patterns);
-
-        return patterns;
-    }
-
-    private void detectSingletonPattern(List<ClassStructure> classes, DesignPatterns patterns) {
-        DesignPattern singletonPattern = DesignPattern.builder()
-            .type(DesignPattern.PatternType.SINGLETON)
-            .name("单例模式")
-            .build();
-
-        for (ClassStructure cls : classes) {
-            boolean hasPrivateConstructor = cls.getMethods().stream()
-                .anyMatch(m -> m.isConstructor() &&
-                              m.getAccessModifier() == ClassStructure.AccessModifier.PRIVATE);
-
-            boolean hasGetInstance = cls.getMethods().stream()
-                .anyMatch(m -> m.getMethodName().toLowerCase().contains("getinstance") ||
-                              m.getMethodName().toLowerCase().contains("instance"));
-
-            if (hasPrivateConstructor && hasGetInstance) {
-                singletonPattern.addInstance(cls.getClassName());
-            }
-        }
-
-        if (singletonPattern.getInstanceCount() > 0) {
-            singletonPattern.setConfidence(0.85);
-            patterns.addPattern(singletonPattern);
-        }
-    }
-
-    private void detectFactoryPattern(List<ClassStructure> classes, DesignPatterns patterns) {
-        DesignPattern factoryPattern = DesignPattern.builder()
-            .type(DesignPattern.PatternType.FACTORY)
-            .name("工厂模式")
-            .build();
-
-        for (ClassStructure cls : classes) {
-            if (cls.getClassName().contains("Factory") || cls.getClassName().contains("Creator")) {
-                factoryPattern.addInstance(cls.getClassName());
-            }
-        }
-
-        if (factoryPattern.getInstanceCount() > 0) {
-            factoryPattern.setConfidence(0.75);
-            patterns.addPattern(factoryPattern);
-        }
-    }
-
-    private ComplexityMetrics calculateComplexityMetrics(List<ClassStructure> classes) {
-        if (classes.isEmpty()) {
-            return ComplexityMetrics.builder().build();
-        }
-
-        List<MethodInfo> allMethods = classes.stream()
-            .flatMap(cls -> cls.getMethods().stream())
-            .toList();
-
-        if (allMethods.isEmpty()) {
-            return ComplexityMetrics.builder().build();
-        }
-
-        double avgComplexity = allMethods.stream()
-            .mapToInt(MethodInfo::getCyclomaticComplexity)
-            .average()
-            .orElse(0.0);
-
-        MethodInfo mostComplex = allMethods.stream()
-            .max(Comparator.comparingInt(MethodInfo::getCyclomaticComplexity))
-            .orElse(null);
-
-        long highComplexityCount = allMethods.stream()
-            .filter(MethodInfo::isComplexMethod)
-            .count();
-
-        double avgLength = allMethods.stream()
-            .mapToInt(MethodInfo::getLinesOfCode)
-            .average()
-            .orElse(0.0);
-
-        long longMethodCount = allMethods.stream()
-            .filter(MethodInfo::isLongMethod)
-            .count();
-
-        long tooManyParamsCount = allMethods.stream()
-            .filter(MethodInfo::hasTooManyParameters)
-            .count();
-
-        return ComplexityMetrics.builder()
-            .avgCyclomaticComplexity(avgComplexity)
-            .maxCyclomaticComplexity(mostComplex != null ? mostComplex.getCyclomaticComplexity() : 0)
-            .mostComplexMethod(mostComplex != null ? mostComplex.getMethodName() : null)
-            .highComplexityMethodCount((int) highComplexityCount)
-            .avgMethodLength(avgLength)
-            .longMethodCount((int) longMethodCount)
-            .tooManyParametersCount((int) tooManyParamsCount)
-            .totalMethods(allMethods.size())
-            .totalClasses(classes.size())
-            .build();
-    }
-
-    private void detectCodeSmells(CodeInsight insight) {
-        insight.getClasses().forEach(cls -> {
-            cls.getMethods().forEach(method -> {
-                method.getSmells().forEach(insight::addCodeSmell);
-            });
-
-            if (cls.getMethodCount() > 20 || cls.getFieldCount() > 15) {
-                insight.addCodeSmell(CodeSmell.builder()
-                    .type(CodeSmell.SmellType.GOD_CLASS)
-                    .severity(CodeSmell.Severity.HIGH)
-                    .location(cls.getClassName())
-                    .message(String.format("类过大(方法:%d, 字段:%d)，建议拆分",
-                        cls.getMethodCount(), cls.getFieldCount()))
-                    .build());
-            }
-        });
-    }
 
     private boolean isCppFile(SourceFile file) {
         String ext = file.getExtension().toLowerCase();

@@ -71,8 +71,8 @@ public class PythonParserAdapter extends AbstractASTParser {
         DependencyGraph dependencyGraph = buildDependencyGraph(classes);
         builder.dependencyGraph(dependencyGraph);
 
-        // 计算统计信息
-        CodeStatistics statistics = calculateStatistics(project, classes);
+        // 计算统计信息（Python 没有接口概念，传 null）
+        CodeStatistics statistics = calculateStatistics(project, classes, null);
         builder.statistics(statistics);
 
         CodeInsight insight = builder.build();
@@ -362,94 +362,11 @@ public class PythonParserAdapter extends AbstractASTParser {
     }
 
     /**
-     * 构建项目结构
+     * Python特定的单例模式检测（覆盖基类方法）
+     * Python使用 __new__ 方法实现单例
      */
-    private ProjectStructure buildProjectStructure(List<ClassStructure> classes,
-                                                   Map<String, Integer> packageClassCount) {
-        if (classes.isEmpty()) {
-            return ProjectStructure.builder().build();
-        }
-
-        String rootPackage = findRootPackage(classes);
-
-        ProjectStructure.ProjectStructureBuilder builder = ProjectStructure.builder()
-            .rootPackage(rootPackage);
-
-        Map<String, ProjectStructure.PackageInfo> packages = new HashMap<>();
-        packageClassCount.forEach((pkg, count) -> {
-            ProjectStructure.PackageInfo packageInfo = ProjectStructure.PackageInfo.builder()
-                .name(pkg)
-                .classCount(count)
-                .build();
-            packages.put(pkg, packageInfo);
-        });
-
-        builder.packages(packages);
-
-        ProjectStructure structure = builder.build();
-        structure.detectArchitectureStyle();
-
-        return structure;
-    }
-
-    private String findRootPackage(List<ClassStructure> classes) {
-        if (classes.isEmpty()) return "default";
-        return classes.get(0).getPackageName().split("\\.")[0];
-    }
-
-    /**
-     * 构建依赖图
-     */
-    private DependencyGraph buildDependencyGraph(List<ClassStructure> classes) {
-        DependencyGraph graph = DependencyGraph.builder().build();
-
-        for (ClassStructure cls : classes) {
-            String className = cls.getFullQualifiedName();
-
-            if (cls.getSuperClass() != null) {
-                graph.addDependency(className, cls.getSuperClass());
-            }
-
-            cls.getInterfaces().forEach(intf -> {
-                graph.addDependency(className, intf);
-            });
-        }
-
-        return graph;
-    }
-
-    /**
-     * 计算统计信息
-     */
-    private CodeStatistics calculateStatistics(Project project, List<ClassStructure> classes) {
-        int totalMethods = classes.stream()
-            .mapToInt(ClassStructure::getMethodCount)
-            .sum();
-
-        return CodeStatistics.builder()
-            .totalFiles(project.getSourceFiles().size())
-            .totalClasses(classes.size())
-            .totalMethods(totalMethods)
-            .totalLines(project.getTotalLines())
-            .build();
-    }
-
-    /**
-     * 检测设计模式
-     */
-    private DesignPatterns detectDesignPatterns(List<ClassStructure> classes) {
-        DesignPatterns patterns = DesignPatterns.builder().build();
-
-        // 检测单例模式（__new__ 方法）
-        detectSingletonPattern(classes, patterns);
-
-        // 检测装饰器模式（大量使用@decorator）
-        detectDecoratorPattern(classes, patterns);
-
-        return patterns;
-    }
-
-    private void detectSingletonPattern(List<ClassStructure> classes, DesignPatterns patterns) {
+    @Override
+    protected void detectSingletonPattern(List<ClassStructure> classes, DesignPatterns patterns) {
         DesignPattern singletonPattern = DesignPattern.builder()
             .type(DesignPattern.PatternType.SINGLETON)
             .name("单例模式")
@@ -470,102 +387,6 @@ public class PythonParserAdapter extends AbstractASTParser {
         }
     }
 
-    private void detectDecoratorPattern(List<ClassStructure> classes, DesignPatterns patterns) {
-        DesignPattern decoratorPattern = DesignPattern.builder()
-            .type(DesignPattern.PatternType.DECORATOR)
-            .name("装饰器模式")
-            .build();
-
-        for (ClassStructure cls : classes) {
-            long decoratorCount = cls.getMethods().stream()
-                .filter(m -> !m.getAnnotations().isEmpty())
-                .count();
-
-            if (decoratorCount > 3) {
-                decoratorPattern.addInstance(cls.getClassName());
-            }
-        }
-
-        if (decoratorPattern.getInstanceCount() > 0) {
-            decoratorPattern.setConfidence(0.6);
-            patterns.addPattern(decoratorPattern);
-        }
-    }
-
-    /**
-     * 计算复杂度指标
-     */
-    private ComplexityMetrics calculateComplexityMetrics(List<ClassStructure> classes) {
-        if (classes.isEmpty()) {
-            return ComplexityMetrics.builder().build();
-        }
-
-        List<MethodInfo> allMethods = classes.stream()
-            .flatMap(cls -> cls.getMethods().stream())
-            .toList();
-
-        if (allMethods.isEmpty()) {
-            return ComplexityMetrics.builder().build();
-        }
-
-        double avgComplexity = allMethods.stream()
-            .mapToInt(MethodInfo::getCyclomaticComplexity)
-            .average()
-            .orElse(0.0);
-
-        MethodInfo mostComplex = allMethods.stream()
-            .max(Comparator.comparingInt(MethodInfo::getCyclomaticComplexity))
-            .orElse(null);
-
-        long highComplexityCount = allMethods.stream()
-            .filter(MethodInfo::isComplexMethod)
-            .count();
-
-        double avgLength = allMethods.stream()
-            .mapToInt(MethodInfo::getLinesOfCode)
-            .average()
-            .orElse(0.0);
-
-        long longMethodCount = allMethods.stream()
-            .filter(MethodInfo::isLongMethod)
-            .count();
-
-        long tooManyParamsCount = allMethods.stream()
-            .filter(MethodInfo::hasTooManyParameters)
-            .count();
-
-        return ComplexityMetrics.builder()
-            .avgCyclomaticComplexity(avgComplexity)
-            .maxCyclomaticComplexity(mostComplex.getCyclomaticComplexity())
-            .mostComplexMethod(mostComplex.getMethodName())
-            .highComplexityMethodCount((int) highComplexityCount)
-            .avgMethodLength(avgLength)
-            .longMethodCount((int) longMethodCount)
-            .tooManyParametersCount((int) tooManyParamsCount)
-            .totalMethods(allMethods.size())
-            .totalClasses(classes.size())
-            .build();
-    }
-
-    /**
-     * 检测代码坏味道
-     */
-    private void detectCodeSmells(CodeInsight insight) {
-        insight.getClasses().forEach(cls -> {
-            cls.getMethods().forEach(method -> {
-                method.getSmells().forEach(insight::addCodeSmell);
-            });
-
-            if (cls.getMethodCount() > 20) {
-                insight.addCodeSmell(CodeSmell.builder()
-                    .type(CodeSmell.SmellType.GOD_CLASS)
-                    .severity(CodeSmell.Severity.HIGH)
-                    .location(cls.getClassName())
-                    .message(String.format("类过大(%d个方法)，建议拆分", cls.getMethodCount()))
-                    .build());
-            }
-        });
-    }
 
     private boolean isPythonFile(SourceFile file) {
         return "py".equalsIgnoreCase(file.getExtension());
