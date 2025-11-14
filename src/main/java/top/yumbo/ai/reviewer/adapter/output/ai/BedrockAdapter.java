@@ -237,8 +237,9 @@ public class BedrockAdapter implements AIServicePort {
                 requestBody.put("anthropic_version", "bedrock-2023-05-31");
                 requestBody.put("max_tokens", maxTokens);
                 requestBody.put("messages", new Object[]{message});
+                // Claude 3+ 只能使用 temperature 或 top_p，不能同时使用
                 requestBody.put("temperature", temperature);
-                requestBody.put("top_p", 0.9);
+                // 不添加 top_p
 
             } else {
                 // Claude 2 及以下版本（旧的文本补全格式）
