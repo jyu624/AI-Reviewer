@@ -14,7 +14,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- AWS SDK BOM - 统一管理版本 -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
@@ -24,40 +23,27 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>top.yumbo.ai</groupId>
             <artifactId>ai-reviewer-starter</artifactId>
             <version>1.0</version>
         </dependency>
-        <!-- AWS SDK BOM - 统一管理版本 -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>bom</artifactId>
-            <version>2.21.0</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
 
-        <!-- Bedrock Runtime -->
+        <!-- AWS SDK 依赖 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>bedrockruntime</artifactId>
         </dependency>
-
-        <!-- 必需的核心依赖 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>aws-core</artifactId>
         </dependency>
-
-        <!-- Metrics 依赖(缺少的类) -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>metrics-spi</artifactId>
         </dependency>
-
-        <!-- HTTP Client -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>apache-client</artifactId>
@@ -68,14 +54,100 @@
             <artifactId>fastjson2</artifactId>
             <version>2.0.52</version>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
     <build>
         <finalName>hackathonApplication</finalName>
+        <plugins>
+            <!-- 只使用 maven-shade-plugin,移除 spring-boot-maven-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <transformers>
+                        <!-- 1. 设置主类 -->
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>top.yumbo.ai.application.hackathon.HackathonApplication</mainClass>
+                        </transformer>
+
+                        <!-- 2. 合并 Spring Boot 配置文件 -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring.factories</resource>
+                        </transformer>
+
+                        <!-- 3. 合并自动配置 imports -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+                            </resource>
+                        </transformer>
+
+                        <!-- 4. 合并 spring.handlers -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring.handlers</resource>
+                        </transformer>
+
+                        <!-- 5. 合并 spring.schemas -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring.schemas</resource>
+                        </transformer>
+
+                        <!-- 6. 合并 spring.tooling -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring.tooling</resource>
+                        </transformer>
+
+                        <!-- 7. 合并 Spring Boot 配置元数据 -->
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                            <resource>META-INF/spring-configuration-metadata.json</resource>
+                        </transformer>
+
+                        <!-- 8. 处理 AWS SDK 服务加载文件 -->
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
+
+                    <!-- 9. 过滤掉签名文件避免冲突 -->
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 保留资源插件确保配置文件被包含 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -88,37 +160,7 @@
                 <filtering>false</filtering>
             </resource>
         </resources>
-        <plugins>
-            <!-- Configure Spring Boot plugin and set the main class so the jar is executable -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <includeSystemScope>true</includeSystemScope>
-                    <layout>ZIP</layout>
-                    <mainClass>top.yumbo.ai.application.hackathon.HackathonApplication</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.3.1</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                    <nonFilteredFileExtensions>
-                        <nonFilteredFileExtension>yml</nonFilteredFileExtension>
-                        <nonFilteredFileExtension>yaml</nonFilteredFileExtension>
-                    </nonFilteredFileExtensions>
-                </configuration>
-            </plugin>
-
-        </plugins>
     </build>
+
+
 </project>
