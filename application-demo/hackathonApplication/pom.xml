@@ -11,6 +11,18 @@
     <version>1.0</version>
     <name>Hackathon Application</name>
     <url>http://maven.apache.org</url>
+    <properties>
+        <aws.version>2.21.0</aws.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>core</artifactId>
+                <version>${aws.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>top.yumbo.ai</groupId>
@@ -21,18 +33,12 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>bedrockruntime</artifactId>
-            <version>2.21.0</version>
+            <version>${aws.version}</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>bedrock</artifactId>
-            <version>2.21.0</version>
-        </dependency>
-        <!-- Ensure AWS SDK core classes (including metrics) are present at runtime -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>core</artifactId>
-            <version>2.21.0</version>
+            <version>${aws.version}</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
