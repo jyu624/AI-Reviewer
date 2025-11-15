@@ -18,7 +18,7 @@
         <dependencies>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
-                <artifactId>core</artifactId>
+                <artifactId>bom</artifactId>
                 <version>${aws.version}</version>
             </dependency>
         </dependencies>
