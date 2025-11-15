@@ -1,0 +1,37 @@
+{
+  "hackathon": {
+    "name": "2025 黑客松大赛",
+    "date": "2025-11-14",
+    "teams": [
+      {
+        "teamName": "Team Alpha",
+        "repoUrl": "https://github.com/user1/hackathon-project",
+        "contactEmail": "alpha@example.com",
+        "submissionTime": "2025-11-14T10:00:00",
+        "tags": ["AI", "Web"]
+      },
+      {
+        "teamName": "Team Beta",
+        "repoUrl": "https://github.com/user2/awesome-app",
+        "contactEmail": "beta@example.com",
+        "submissionTime": "2025-11-14T11:30:00",
+        "tags": ["Mobile", "Cloud"]
+      },
+      {
+        "teamName": "Team Gamma",
+        "repoUrl": "https://github.com/user3/innovative-solution",
+        "contactEmail": "gamma@example.com",
+        "submissionTime": "2025-11-14T12:00:00",
+        "tags": ["IoT", "Data"]
+      },
+      {
+        "teamName": "Team Delta",
+        "repoUrl": "D:\\Projects\\local-hackathon-project",
+        "contactEmail": "delta@example.com",
+        "submissionTime": "2025-11-14T13:45:00",
+        "tags": ["Blockchain", "Security"]
+      }
+    ]
+  }
+}
+

@@ -3,9 +3,7 @@ package top.yumbo.ai.reviewer.application.hackathon.cli;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.reviewer.adapter.storage.local.LocalFileSystemAdapter;
 import top.yumbo.ai.reviewer.adapter.repository.git.GitRepositoryAdapter;
-import top.yumbo.ai.reviewer.application.hackathon.service.HackathonAnalysisService;
 import top.yumbo.ai.reviewer.application.hackathon.service.HackathonIntegrationService;
-import top.yumbo.ai.reviewer.application.hackathon.service.HackathonScoringService;
 import top.yumbo.ai.reviewer.application.hackathon.service.LeaderboardService;
 import top.yumbo.ai.reviewer.application.hackathon.service.TeamManagementService;
 import top.yumbo.ai.reviewer.application.port.output.CloneRequest;
@@ -13,12 +11,19 @@ import top.yumbo.ai.reviewer.application.port.output.RepositoryPort;
 import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
 import top.yumbo.ai.reviewer.application.service.ReportGenerationService;
 import top.yumbo.ai.reviewer.domain.model.*;
+import top.yumbo.ai.reviewer.application.hackathon.cli.dto.*;
+import top.yumbo.ai.reviewer.application.hackathon.cli.parser.TeamSubmissionParser;
+import com.alibaba.fastjson2.JSON;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Scanner;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 黑客松交互式命令行应用
@@ -204,12 +209,70 @@ public class HackathonInteractiveApp {
      */
     private void reviewBatchProjects() {
         System.out.println("\n📦 === 批量评审项目 ===\n");
-        System.out.println("请输入包含多个项目URL的文件路径（每行一个URL，格式：团队名,URL）");
-        System.out.print("文件路径: ");
+        System.out.println("支持的文件格式:");
+        System.out.println("  • CSV: team_name,repo_url,contact_email,submission_time");
+        System.out.println("  • JSON: {\"teams\": [{\"teamName\": \"...\", \"repoUrl\": \"...\"}]}");
+        System.out.println("  • TXT: 每行一个 URL 或 团队名:URL");
+        System.out.print("\n文件路径: ");
 
         String filePath = scanner.nextLine().trim();
-        // TODO: 实现批量评审逻辑
-        System.out.println("💡 批量评审功能正在开发中...");
+
+        if (filePath.isEmpty()) {
+            System.out.println("❌ 文件路径不能为空");
+            return;
+        }
+
+        Path inputFile = Paths.get(filePath);
+        if (!Files.exists(inputFile)) {
+            System.out.println("❌ 文件不存在: " + filePath);
+            return;
+        }
+
+        try {
+            // 解析团队提交文件
+            System.out.println("\n⏳ 正在解析提交文件...");
+            List<TeamSubmission> submissions = TeamSubmissionParser.parse(inputFile);
+            System.out.println("✅ 找到 " + submissions.size() + " 个团队提交");
+
+            if (submissions.isEmpty()) {
+                System.out.println("❌ 没有找到有效的团队提交");
+                return;
+            }
+
+            // 确认是否继续
+            System.out.print("\n是否开始批量评审？[Y/n]: ");
+            String confirm = scanner.nextLine().trim();
+            if (!confirm.isEmpty() && !confirm.equalsIgnoreCase("Y")) {
+                System.out.println("❌ 已取消");
+                return;
+            }
+
+            // 选择并行度
+            System.out.print("\n并行评审线程数 [1-10, 默认4]: ");
+            String parallelInput = scanner.nextLine().trim();
+            int parallelism = parseParallelism(parallelInput, 4);
+
+            // 执行批量评审
+            System.out.println("\n⏳ 开始批量评审（并行度: " + parallelism + "）...\n");
+            BatchReviewResult result = executeBatchReview(submissions, parallelism);
+
+            // 显示结果摘要
+            printBatchReviewSummary(result);
+
+            // 询问是否导出详细报告
+            System.out.print("\n是否导出详细报告？[Y/n]: ");
+            String exportChoice = scanner.nextLine().trim();
+            if (exportChoice.isEmpty() || exportChoice.equalsIgnoreCase("Y")) {
+                exportBatchReviewReport(result);
+            }
+
+        } catch (IOException e) {
+            System.out.println("❌ 读取文件失败: " + e.getMessage());
+            log.error("Failed to read batch file", e);
+        } catch (Exception e) {
+            System.out.println("❌ 批量评审失败: " + e.getMessage());
+            log.error("Batch review failed", e);
+        }
     }
 
     /**
@@ -348,6 +411,376 @@ public class HackathonInteractiveApp {
         } catch (Exception e) {
             System.out.println("❌ 保存报告失败: " + e.getMessage());
             log.error("Failed to save report", e);
+        }
+    }
+
+    /**
+     * 执行批量评审
+     */
+    private BatchReviewResult executeBatchReview(List<TeamSubmission> submissions, int parallelism) {
+        long startTime = System.currentTimeMillis();
+        List<ReviewResult> results = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger completed = new AtomicInteger(0);
+        AtomicInteger success = new AtomicInteger(0);
+        AtomicInteger failure = new AtomicInteger(0);
+
+        ExecutorService executor = Executors.newFixedThreadPool(parallelism);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (TeamSubmission submission : submissions) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    ReviewResult result = reviewSingleSubmission(submission);
+                    results.add(result);
+
+                    if (result.isSuccess()) {
+                        success.incrementAndGet();
+                        System.out.println("✅ [" + completed.incrementAndGet() + "/" + submissions.size() + "] "
+                            + submission.getTeamName() + " - 评审完成 (得分: " + result.getReport().getOverallScore() + ")");
+                    } else {
+                        failure.incrementAndGet();
+                        System.out.println("❌ [" + completed.incrementAndGet() + "/" + submissions.size() + "] "
+                            + submission.getTeamName() + " - 评审失败: " + result.getErrorMessage());
+                    }
+                } catch (Exception e) {
+                    failure.incrementAndGet();
+                    results.add(ReviewResult.failure(submission, e.getMessage()));
+                    System.out.println("❌ [" + completed.incrementAndGet() + "/" + submissions.size() + "] "
+                        + submission.getTeamName() + " - 异常: " + e.getMessage());
+                    log.error("Review failed for team: " + submission.getTeamName(), e);
+                }
+            }, executor);
+
+            futures.add(future);
+        }
+
+        // 等待所有任务完成
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+        } catch (Exception e) {
+            log.error("Error waiting for batch review completion", e);
+        } finally {
+            executor.shutdown();
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
+
+        return BatchReviewResult.builder()
+            .totalCount(submissions.size())
+            .successCount(success.get())
+            .failureCount(failure.get())
+            .duration(duration)
+            .results(results)
+            .build();
+    }
+
+    /**
+     * 评审单个提交
+     */
+    private ReviewResult reviewSingleSubmission(TeamSubmission submission) {
+        try {
+            Path projectPath;
+
+            // 克隆或使用本地路径
+            if (submission.getRepoUrl().startsWith("http://") ||
+                submission.getRepoUrl().startsWith("https://") ||
+                submission.getRepoUrl().startsWith("git@")) {
+                projectPath = cloneProject(submission.getRepoUrl());
+            } else {
+                projectPath = Paths.get(submission.getRepoUrl());
+                if (!Files.exists(projectPath)) {
+                    return ReviewResult.failure(submission, "本地路径不存在: " + submission.getRepoUrl());
+                }
+            }
+
+            // 扫描和分析
+            List<SourceFile> files = fileSystemAdapter.scanProjectFiles(projectPath);
+
+            if (files.isEmpty()) {
+                return ReviewResult.failure(submission, "没有找到可分析的源代码文件");
+            }
+
+            Project project = Project.builder()
+                .name(submission.getTeamName())
+                .rootPath(projectPath)
+                .type(detectProjectType(files))
+                .sourceFiles(files)
+                .build();
+
+            AnalysisTask task = analysisService.analyzeProject(project);
+
+            if (task.isCompleted()) {
+                ReviewReport report = analysisService.getAnalysisResult(task.getTaskId());
+                return ReviewResult.success(submission, report);
+            } else {
+                return ReviewResult.failure(submission, task.getErrorMessage() != null ?
+                    task.getErrorMessage() : "分析未完成");
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to review submission: " + submission.getTeamName(), e);
+            return ReviewResult.failure(submission, e.getMessage());
+        }
+    }
+
+    /**
+     * 打印批量评审摘要
+     */
+    private void printBatchReviewSummary(BatchReviewResult result) {
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("📊 批量评审完成");
+        System.out.println("=".repeat(60));
+        System.out.println("总数: " + result.getTotalCount());
+        System.out.println("成功: " + result.getSuccessCount() + " (" +
+            (result.getTotalCount() > 0 ? (result.getSuccessCount() * 100 / result.getTotalCount()) : 0) + "%)");
+        System.out.println("失败: " + result.getFailureCount());
+        System.out.println("耗时: " + formatDuration(result.getDuration()));
+
+        // 显示成功的团队排名（按分数降序）
+        List<ReviewResult> successResults = result.getResults().stream()
+            .filter(ReviewResult::isSuccess)
+            .sorted((a, b) -> Integer.compare(
+                b.getReport().getOverallScore(),
+                a.getReport().getOverallScore()))
+            .toList();
+
+        if (!successResults.isEmpty()) {
+            System.out.println("\n🏆 排行榜（前10名）:");
+            int rank = 1;
+            for (ReviewResult r : successResults.stream().limit(10).toList()) {
+                System.out.printf("  %2d. %-30s 得分: %d (%s)\n",
+                    rank++,
+                    r.getSubmission().getTeamName(),
+                    r.getReport().getOverallScore(),
+                    r.getReport().getGrade());
+            }
+        }
+
+        // 显示失败的团队
+        List<ReviewResult> failedResults = result.getResults().stream()
+            .filter(r -> !r.isSuccess())
+            .toList();
+
+        if (!failedResults.isEmpty()) {
+            System.out.println("\n❌ 失败的团队:");
+            for (ReviewResult r : failedResults) {
+                System.out.println("  • " + r.getSubmission().getTeamName() +
+                    ": " + r.getErrorMessage());
+            }
+        }
+
+        System.out.println("=".repeat(60) + "\n");
+    }
+
+    /**
+     * 导出批量评审报告
+     */
+    private void exportBatchReviewReport(BatchReviewResult result) {
+        try {
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String baseFileName = "batch-review-" + timestamp;
+
+            // 导出汇总报告（Markdown）
+            Path summaryPath = Paths.get(baseFileName + "-summary.md");
+            String summaryMd = generateBatchSummaryMarkdown(result);
+            Files.writeString(summaryPath, summaryMd);
+            System.out.println("✅ 汇总报告已保存: " + summaryPath.toAbsolutePath());
+
+            // 导出详细结果（JSON）
+            Path jsonPath = Paths.get(baseFileName + "-details.json");
+            String jsonContent = JSON.toJSONString(result);
+            Files.writeString(jsonPath, jsonContent);
+            System.out.println("✅ 详细结果已保存: " + jsonPath.toAbsolutePath());
+
+            // 导出CSV格式排行榜
+            Path csvPath = Paths.get(baseFileName + "-leaderboard.csv");
+            String csvContent = generateLeaderboardCSV(result);
+            Files.writeString(csvPath, csvContent);
+            System.out.println("✅ 排行榜已保存: " + csvPath.toAbsolutePath());
+
+            // 为每个成功的团队生成独立报告
+            System.out.print("\n是否为每个团队生成独立报告？[Y/n]: ");
+            String choice = scanner.nextLine().trim();
+            if (choice.isEmpty() || choice.equalsIgnoreCase("Y")) {
+                exportIndividualReports(result, timestamp);
+            }
+
+        } catch (Exception e) {
+            System.out.println("❌ 导出报告失败: " + e.getMessage());
+            log.error("Failed to export batch review report", e);
+        }
+    }
+
+    /**
+     * 导出各团队独立报告
+     */
+    private void exportIndividualReports(BatchReviewResult result, String timestamp) {
+        try {
+            Path reportsDir = Paths.get("batch-reports-" + timestamp);
+            Files.createDirectories(reportsDir);
+
+            int count = 0;
+            for (ReviewResult r : result.getResults()) {
+                if (r.isSuccess()) {
+                    String teamFileName = r.getSubmission().getTeamName()
+                        .replaceAll("[^a-zA-Z0-9-_]", "_");
+                    Path teamReportPath = reportsDir.resolve(teamFileName + "-report.md");
+
+                    reportService.saveReport(r.getReport(), teamReportPath, "markdown");
+                    count++;
+                }
+            }
+
+            System.out.println("✅ 已生成 " + count + " 份独立报告，保存在: " + reportsDir.toAbsolutePath());
+
+        } catch (Exception e) {
+            System.out.println("❌ 生成独立报告失败: " + e.getMessage());
+            log.error("Failed to export individual reports", e);
+        }
+    }
+
+    /**
+     * 生成批量评审汇总Markdown
+     */
+    private String generateBatchSummaryMarkdown(BatchReviewResult result) {
+        StringBuilder md = new StringBuilder();
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        md.append("# 黑客松批量评审报告\n\n");
+        md.append("**生成时间**: ").append(timestamp).append("\n\n");
+
+        md.append("## 📊 评审概况\n\n");
+        md.append("| 指标 | 数值 |\n");
+        md.append("|------|------|\n");
+        md.append("| 总数 | ").append(result.getTotalCount()).append(" |\n");
+        md.append("| 成功 | ").append(result.getSuccessCount()).append(" |\n");
+        md.append("| 失败 | ").append(result.getFailureCount()).append(" |\n");
+        md.append("| 成功率 | ").append(result.getTotalCount() > 0 ?
+            String.format("%.1f%%", result.getSuccessCount() * 100.0 / result.getTotalCount()) : "0%")
+            .append(" |\n");
+        md.append("| 耗时 | ").append(formatDuration(result.getDuration())).append(" |\n\n");
+
+        // 排行榜
+        List<ReviewResult> successResults = result.getResults().stream()
+            .filter(ReviewResult::isSuccess)
+            .sorted((a, b) -> Integer.compare(
+                b.getReport().getOverallScore(),
+                a.getReport().getOverallScore()))
+            .toList();
+
+        if (!successResults.isEmpty()) {
+            md.append("## 🏆 排行榜\n\n");
+            md.append("| 排名 | 团队名称 | 总分 | 等级 | 代码质量 | 创新性 | 完整性 | 文档 |\n");
+            md.append("|------|----------|------|------|----------|--------|--------|------|\n");
+
+            int rank = 1;
+            for (ReviewResult r : successResults) {
+                ReviewReport report = r.getReport();
+                Map<String, Integer> scores = report.getDimensionScores();
+
+                md.append(String.format("| %d | %s | %d | %s | %d | %d | %d | %d |\n",
+                    rank++,
+                    r.getSubmission().getTeamName(),
+                    report.getOverallScore(),
+                    report.getGrade(),
+                    scores.getOrDefault("代码质量", 0),
+                    scores.getOrDefault("创新性", 0),
+                    scores.getOrDefault("完整性", 0),
+                    scores.getOrDefault("文档质量", 0)
+                ));
+            }
+            md.append("\n");
+        }
+
+        // 失败的团队
+        List<ReviewResult> failedResults = result.getResults().stream()
+            .filter(r -> !r.isSuccess())
+            .toList();
+
+        if (!failedResults.isEmpty()) {
+            md.append("## ❌ 评审失败的团队\n\n");
+            md.append("| 团队名称 | 错误信息 |\n");
+            md.append("|----------|----------|\n");
+
+            for (ReviewResult r : failedResults) {
+                md.append("| ").append(r.getSubmission().getTeamName())
+                    .append(" | ").append(r.getErrorMessage()).append(" |\n");
+            }
+            md.append("\n");
+        }
+
+        md.append("---\n");
+        md.append("*报告由 AI-Reviewer 自动生成*\n");
+
+        return md.toString();
+    }
+
+    /**
+     * 生成排行榜CSV
+     */
+    private String generateLeaderboardCSV(BatchReviewResult result) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("排名,团队名称,总分,等级,代码质量,创新性,完整性,文档质量,联系邮箱\n");
+
+        List<ReviewResult> successResults = result.getResults().stream()
+            .filter(ReviewResult::isSuccess)
+            .sorted((a, b) -> Integer.compare(
+                b.getReport().getOverallScore(),
+                a.getReport().getOverallScore()))
+            .toList();
+
+        int rank = 1;
+        for (ReviewResult r : successResults) {
+            ReviewReport report = r.getReport();
+            Map<String, Integer> scores = report.getDimensionScores();
+
+            csv.append(rank++).append(",")
+                .append(r.getSubmission().getTeamName()).append(",")
+                .append(report.getOverallScore()).append(",")
+                .append(report.getGrade()).append(",")
+                .append(scores.getOrDefault("代码质量", 0)).append(",")
+                .append(scores.getOrDefault("创新性", 0)).append(",")
+                .append(scores.getOrDefault("完整性", 0)).append(",")
+                .append(scores.getOrDefault("文档质量", 0)).append(",")
+                .append(r.getSubmission().getContactEmail() != null ?
+                    r.getSubmission().getContactEmail() : "")
+                .append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    /**
+     * 解析并行度参数
+     */
+    private int parseParallelism(String input, int defaultValue) {
+        if (input == null || input.trim().isEmpty()) {
+            return defaultValue;
+        }
+
+        try {
+            int value = Integer.parseInt(input.trim());
+            if (value < 1) return 1;
+            return Math.min(value, 10);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    /**
+     * 格式化持续时间
+     */
+    private String formatDuration(long millis) {
+        long seconds = millis / 1000;
+        long minutes = seconds / 60;
+        long hours = minutes / 60;
+
+        if (hours > 0) {
+            return String.format("%d小时%d分钟%d秒", hours, minutes % 60, seconds % 60);
+        } else if (minutes > 0) {
+            return String.format("%d分钟%d秒", minutes, seconds % 60);
+        } else {
+            return String.format("%d秒", seconds);
         }
     }
 
