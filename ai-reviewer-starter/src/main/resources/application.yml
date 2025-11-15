@@ -1,0 +1,53 @@
+# AI Reviewer Configuration
+ai-reviewer:
+  # File scanner configuration
+  scanner:
+    include-patterns:
+      - "**/*.java"
+      - "**/*.py"
+      - "**/*.js"
+    exclude-patterns:
+      - "**/target/**"
+      - "**/build/**"
+      - "**/node_modules/**"
+      - "**/.git/**"
+    max-file-size: "10MB"
+  # Parser configuration
+  parser:
+    enabled-parsers:
+      - java
+      - text
+  # AI service configuration
+  ai:
+    provider: deepseek
+    model: deepseek-coder
+    api-key: ${AI_API_KEY:your-api-key-here}
+    endpoint: https://api.deepseek.com/v1/chat/completions
+    sysPrompt: "You are an expert code reviewer. Provide constructive feedback on the following code."
+    #use String.format(userPrompt,code/content) to insert code snippet
+    userPrompt: |
+      Please review this code: %s
+    temperature: 0.7
+    max-tokens: 2000
+    timeout-seconds: 30
+    max-retries: 3
+  # Processor configuration
+  processor:
+    type: code-review
+    output-format: markdown
+    output-path: ./reports
+  # Executor configuration
+  executor:
+    thread-pool-size: 10
+    max-queue-size: 100
+# Spring Boot Configuration
+spring:
+  application:
+    name: ai-reviewer
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    top.yumbo.ai: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

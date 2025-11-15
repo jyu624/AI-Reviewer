@@ -3,9 +3,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
-logs/
+
 ### IntelliJ IDEA ###
-.idea
+.idea/
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
@@ -13,7 +13,7 @@ logs/
 *.iws
 *.iml
 *.ipr
-
+/reports/
 ### Eclipse ###
 .apt_generated
 .classpath

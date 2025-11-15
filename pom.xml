@@ -1,333 +1,171 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>top.yumbo.ai</groupId>
-    <artifactId>ai-reviewer</artifactId>
-    <version>2.0</version>
+    <artifactId>ai-reviewer-parent</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
 
-    <name>AI Reviewer</name>
-    <description>Enterprise-grade AI-powered intelligent review engine for multi-modal project analysis</description>
-    <url>https://github.com/jinhua10/ai-reviewer</url>
-    <inceptionYear>2025</inceptionYear>
+    <name>AI Reviewer Parent</name>
+    <description>AI-powered code review and analysis engine</description>
 
+    <modules>
+        <module>ai-reviewer-api</module>
+        <module>ai-reviewer-common</module>
+        <module>ai-reviewer-core</module>
+        <module>ai-reviewer-adaptor-parser</module>
+        <module>ai-reviewer-adaptor-ai</module>
+        <module>ai-reviewer-adaptor-processor</module>
+        <module>ai-reviewer-starter</module>
+        <module>application-demo/hackathonApplication</module>
+    </modules>
 
     <properties>
+        <ai-reviewer.version>1.0</ai-reviewer.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <jackson.version>2.17.0</jackson.version>
+        <spring.boot.version>3.2.0</spring.boot.version>
+        <lombok.version>1.18.30</lombok.version>
+        <slf4j.version>2.0.9</slf4j.version>
+        <jackson.version>2.16.0</jackson.version>
+        <guava.version>32.1.3-jre</guava.version>
+        <commons-lang3.version>3.14.0</commons-lang3.version>
+        <junit.version>5.10.1</junit.version>
+        <mockito.version>5.8.0</mockito.version>
+        <javaparser.version>3.27.0</javaparser.version>
+        <okhttp.version>4.12.0</okhttp.version>
     </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
-            <version>2.0.52</version>
-        </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.2</version>
-        </dependency>
-        <!-- Dependency Injection -->
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>7.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock-jre8</artifactId>
-            <version>2.35.0</version>
-            <scope>test</scope>
-        </dependency>
-        <!-- Jackson YAML for  config loading -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.13</version>
-        </dependency>
-        <!-- Logback: 支持行号输出的日志实现 -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.4.14</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>com.networknt</groupId>
-            <artifactId>json-schema-validator</artifactId>
-            <version>1.0.87</version>
-        </dependency>
-        <dependency>
-            <groupId>org.commonmark</groupId>
-            <artifactId>commonmark</artifactId>
-            <version>0.21.0</version>
-        </dependency>
 
-        <!-- ANTLR for code parsing -->
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-            <version>4.13.1</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot Dependencies -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
-        <!-- JavaParser for Java AST analysis -->
-        <dependency>
-            <groupId>com.github.javaparser</groupId>
-            <artifactId>javaparser-symbol-solver-core</artifactId>
-            <version>3.25.7</version>
-        </dependency>
+            <!-- Internal Modules -->
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-adaptor-parser</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-adaptor-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-adaptor-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
-        <!-- Apache Tika for file type detection -->
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-core</artifactId>
-            <version>2.9.2</version>
-        </dependency>
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
 
-        <!-- Graphviz for visualization (optional) -->
-        <dependency>
-            <groupId>guru.nidi</groupId>
-            <artifactId>graphviz-java</artifactId>
-            <version>0.18.1</version>
-        </dependency>
+            <!-- Logging -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
 
-        <!-- AWS Bedrock Runtime for AI models -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>bedrockruntime</artifactId>
-            <version>2.21.0</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>bedrock</artifactId>
-            <version>2.21.0</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
-            <version>2.21.0</version>
-        </dependency>
+            <!-- Jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 
-        <!-- AWS S3 SDK for file storage -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-            <version>2.21.0</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3-transfer-manager</artifactId>
-            <version>2.21.0</version>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk.crt</groupId>
-            <artifactId>aws-crt</artifactId>
-            <version>0.29.0</version>
-        </dependency>
+            <!-- Guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
 
+            <!-- Apache Commons -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
 
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.26.3</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.10.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.10.0</version>
-            <scope>test</scope>
-        </dependency>
+            <!-- JavaParser -->
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser.version}</version>
+            </dependency>
 
-        <!-- JGit for Git operations -->
-        <dependency>
-            <groupId>org.eclipse.jgit</groupId>
-            <artifactId>org.eclipse.jgit</artifactId>
-            <version>6.8.0.202311291450-r</version>
-        </dependency>
+            <!-- OkHttp -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+            </dependency>
 
-        <!-- GitHub API (optional, for advanced features) -->
-        <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>github-api</artifactId>
-            <version>1.318</version>
-        </dependency>
-    </dependencies>
+            <!-- Testing -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
-                    <release>17</release>
-                </configuration>
-            </plugin>
-            <!-- Configure Checkstyle with a relaxed ruleset to reduce style warnings during cleanup -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.2.0</version>
-                <configuration>
-                    <!-- use project-local config to control strictness -->
-                    <configLocation>config/checkstyle/checkstyle.xml</configLocation>
-                    <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
-                    <!--<encoding>UTF-8</encoding>-->
-                    <!-- Do not fail the build on violations; we'll iteratively fix them -->
-                    <failOnViolation>false</failOnViolation>
-                    <consoleOutput>true</consoleOutput>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-                <configuration>
-                    <!-- 传递给单元测试JVM的系统属性 -->
-                    <systemProperties>
-                        <!-- HTTP代理（可选，若需要） -->
-                        <property>
-                            <name>http.proxyHost</name>
-                            <value>localhost</value> <!-- 例如：127.0.0.1 -->
-                        </property>
-                        <property>
-                            <name>http.proxyPort</name>
-                            <value>7890</value> <!-- 例如：1080 -->
-                        </property>
-
-                        <!-- HTTPS代理（GitHub主要用HTTPS，必须配置） -->
-                        <property>
-                            <name>https.proxyHost</name>
-                            <value>localhost</value>
-                        </property>
-                        <property>
-                            <name>https.proxyPort</name>
-                            <value>7890</value>
-                        </property>
-                        <!-- 非代理主机列表：所有不在此列表的主机（含GitHub）会走代理 -->
-                        <property>
-                            <name>https.nonProxyHosts</name>
-                            <!-- 按需添加你的内部域名、本地地址等，用|分隔 -->
-                            <value>
-                                localhost|127.0.0.1|*.anthropic.com|*.openai.*|*.googleapis.com|*.deepseek.*|*.aliyun.com|*.spring.*|*.baidu.com|*.google.com|*
-                            </value>
-                        </property>
-                    </systemProperties>
-                    <useModulePath>false</useModulePath>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>top.yumbo.ai.reviewer.adapter.input.cli.CommandLineAdapter</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>**/*</include>
-                </includes>
-            </resource>
-        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.11.0</version>
+                    <configuration>
+                        <source>17</source>
+                        <target>17</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring.boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
-
 </project>

@@ -1,5 +1,0 @@
-Team Alpha:https://github.com/user1/hackathon-project
-Team Beta:https://github.com/user2/awesome-app
-Team Gamma:https://github.com/user3/innovative-solution
-Team Delta:D:\Projects\local-hackathon-project
-

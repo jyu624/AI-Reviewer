@@ -1,1380 +1,757 @@
-# AI-Reviewer 🤖
+# AI Reviewer - AI-Powered Code Review Engine
 
-<div align="center">
+[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Maven](https://img.shields.io/badge/Maven-3.8+-blue.svg)](https://maven.apache.org/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-![Version](https://img.shields.io/badge/version-2.0-blue.svg)
-![Java](https://img.shields.io/badge/Java-17+-orange.svg)
-![Architecture](https://img.shields.io/badge/architecture-hexagonal-brightgreen.svg)
-![Build](https://img.shields.io/badge/build-passing-success.svg)
-![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-18%20classes-brightgreen.svg)
-![Code Quality](https://img.shields.io/badge/quality-A+-success.svg)
+An intelligent, extensible, and production-ready AI engine driven by AI services. It uses a modular, adapter-based architecture to provide maximum flexibility and extensibility.
 
-**企业级 AI 驱动的智能代码评审引擎**
+ English | [简体中文](README_CN.md)
 
-支持多模态项目分析 | 六边形架构 | 多 AI 服务商 | 黑客松集成
+## 📋 Table of Contents
 
-[快速开始](#-快速开始) · [功能特性](#-核心特性) · [架构设计](#-架构设计) · [文档](#-文档) · [贡献指南](#-贡献)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Quick Start](#-quick-start)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Module Details](#-module-details)
+- [Extending the Engine](#-extending-the-engine)
+- [Examples](#-examples)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-</div>
+## ✨ Features
 
----
+- 🤖 **Multi-AI Provider Support** - OpenAI, DeepSeek, Claude, and custom AI services
+- 🔌 **Plugin Architecture** - Extensible adapter-based design with SPI support
+- 📝 **Multiple Language Parsers** - Java, Python, JavaScript, and plain text
+- 🚀 **High Performance** - Multi-threaded processing with configurable thread pools
+- 🎯 **Pattern-based Filtering** - Include/exclude patterns for precise file selection
+- 📊 **Comprehensive Reporting** - Markdown, JSON, and custom output formats
+- 🔧 **Spring Boot Integration** - Auto-configuration and seamless integration
+- ⚡ **Production Ready** - Exception handling, logging, and retry mechanisms
 
-## 📖 项目简介
+## 🏗️ Architecture
 
-**AI-Reviewer** 是一款采用**六边形架构（Hexagonal Architecture）**设计的企业级**通用文件分析引擎**。它能够读取文件夹中的各类文件，利用市面上的AI服务进行智能分析，并生成详细的分析报告。特别适用于黑客松项目评分、代码质量评估、文档分析、技术债务管理等场景。
-
-📘 **[查看完整架构文档](./doc/ARCHITECTURE.md)** - 了解项目设计理念和扩展指南
-
-## 🎨 框架能力与扩展指南
-
-AI-Reviewer 采用六边形架构设计，为开发者提供了强大的扩展能力。通过研究**黑客松评分系统**这个完整示例，您可以快速构建类似的应用。
-
-### 📦 引入AI-Reviewer引擎框架示例
-
-#### ✅ **已实现：[黑客松评分系统](./doc/HACKATHON/HACKATHON-GUIDE.md)**
-
-一个完整的黑客松项目评审系统，包含：
-- 🔄 **Git集成** - 自动从GitHub/Gitee克隆项目
-- 🤖 **智能评分** - 多维度AI评分（代码质量、创新性、完整性、文档）
-- 👥 **团队管理** - 完整的团队和参与者管理
-- 📊 **排行榜** - 实时生成评分排行榜
-- 📝 **报告生成** - 详细的评审报告（JSON/Markdown）
-
-#### 🚀 **您可以基于此框架快速构建**
-
-基于黑客松示例，您可以扩展出更多应用场景：
-
-<details>
-<summary><b>1. 📚 代码培训平台</b></summary>
+The AI Reviewer follows a clean, layered architecture with clear separation of concerns:
 
 ```
-application/training/
-├── cli/
-│   └── TrainingCommandLineApp.java
-├── service/
-│   ├── ExerciseManagementService.java
-│   ├── StudentProgressService.java
-│   └── AutoGradingService.java
-└── model/
-    ├── Exercise.java
-    ├── Submission.java
-    └── StudentProgress.java
+┌─────────────────────────────────────────────────────────────┐
+│                    Application Layer                         │
+│              (Spring Boot / CLI / REST API)                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    AI Engine (Core)                          │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ File Scanner → File Filter → Parser → AI → Processor│   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   Adapter Registry (SPI)                     │
+│  ┌──────────┐  ┌──────────┐  ┌────────────────────────┐    │
+│  │ Parsers  │  │ AI Svcs  │  │ Result Processors      │    │
+│  └──────────┘  └──────────┘  └────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  Core Interfaces (API)                       │
+│    IFileParser  │  IAIService  │  IResultProcessor          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**复用能力**：
-- ✅ AI代码分析引擎
-- ✅ 评分系统
-- ✅ 报告生成
-- ✅ Git项目管理
+### Core Modules
 
-**新增功能**：
-- 练习库管理
-- 学生进度跟踪
-- 自动评分
-- 学习路径推荐
+1. **ai-reviewer-api** - Core interfaces and data models
+2. **ai-reviewer-common** - Common utilities and exception handling
+3. **ai-reviewer-core** - Main engine and orchestration logic
+4. **ai-reviewer-adaptor-parser** - File parsing adapters (Java, Python, JavaScript, Text)
+5. **ai-reviewer-adaptor-ai** - AI service adapters (HTTP-based AI services)
+6. **ai-reviewer-adaptor-processor** - Result processing adapters (Markdown reports)
+7. **ai-reviewer-starter** - Spring Boot starter with auto-configuration
 
-</details>
+## 🚀 Quick Start
 
-<details>
-<summary><b>2. 🏆 代码竞赛平台</b></summary>
+### Prerequisites
 
-```
-application/contest/
-├── cli/
-│   └── ContestCommandLineApp.java
-├── service/
-│   ├── ContestManagementService.java
-│   ├── SubmissionValidationService.java
-│   └── LiveRankingService.java
-└── model/
-    ├── Contest.java
-    ├── Participant.java
-    └── ContestSubmission.java
-```
+- **Java 17+** - Download from [Oracle](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
+- **Maven 3.8+** - Download from [Apache Maven](https://maven.apache.org/download.cgi)
+- **AI API Key** - Get your key from [OpenAI](https://platform.openai.com/), [DeepSeek](https://platform.deepseek.com/), etc.
 
-**复用能力**：
-- ✅ 实时评分系统
-- ✅ 排行榜生成
-- ✅ 多项目并发分析
-- ✅ 缓存机制
+### Installation
 
-**新增功能**：
-- 时间限制控制
-- 实时排名更新
-- 作弊检测
-- 性能基准测试
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/AI-Reviewer.git
+   cd AI-Reviewer
+   ```
 
-</details>
+2. **Build the project**
+   ```bash
+   mvn clean install -DskipTests
+   ```
 
-<details>
-<summary><b>3. 🎓 代码认证系统</b></summary>
+3. **Verify installation**
+   ```bash
+   mvn -version
+   java -version
+   ```
 
-```
-application/certification/
-├── cli/
-│   └── CertificationCommandLineApp.java
-├── service/
-│   ├── CertificationService.java
-│   ├── SkillAssessmentService.java
-│   └── BadgeManagementService.java
-└── model/
-    ├── Certification.java
-    ├── SkillLevel.java
-    └── Badge.java
-```
+### Running Your First Review
 
-**复用能力**：
-- ✅ 多维度评估
-- ✅ 详细报告生成
-- ✅ AI智能分析
-- ✅ 标准化评分
+1. **Navigate to the demo application**
+   ```bash
+   cd application-demo/hackathonApplication
+   ```
 
-**新增功能**：
-- 技能等级评定
-- 证书生成
-- 徽章系统
-- 技能图谱
+2. **Set your API key** (Linux/Mac)
+   ```bash
+   export AI_API_KEY="your-api-key-here"
+   ```
+   Or (Windows)
+   ```powershell
+   $env:AI_API_KEY="your-api-key-here"
+   ```
 
-</details>
+3. **Run the application**
+   ```bash
+   mvn spring-boot:run -Dspring-boot.run.arguments="--review /path/to/your/code"
+   ```
 
-<details>
-<summary><b>4. 🔍 代码审计工具</b></summary>
+## ⚙️ Configuration
 
-```
-application/audit/
-├── cli/
-│   └── AuditCommandLineApp.java
-├── service/
-│   ├── SecurityAuditService.java
-│   ├── ComplianceCheckService.java
-│   └── VulnerabilityDetectionService.java
-└── model/
-    ├── SecurityIssue.java
-    ├── ComplianceReport.java
-    └── VulnerabilityScore.java
-```
+### Application Configuration
 
-**复用能力**：
-- ✅ 深度代码分析
-- ✅ 多语言支持
-- ✅ 批量处理
-- ✅ 缓存优化
+Create or update `application.yml` in your project:
 
-**新增功能**：
-- 安全漏洞检测
-- 合规性检查
-- 风险评级
-- 修复建议
-
-</details>
-
-### 🛠️ 框架提供的核心能力
-
-基于黑客松示例，框架为您提供以下**开箱即用**的能力：
-
-#### 1️⃣ **多AI服务集成**
 ```yaml
-# 轻松切换AI服务商
-aiService:
-  provider: "deepseek"  # 支持: deepseek, openai, gemini, claude
-  apiKey: "your-api-key"
-  model: "deepseek-chat"
-```
-
-**支持的AI服务**：
-- 🔵 **DeepSeek** - 高性价比，适合大规模评审
-- 🟢 **OpenAI** - GPT-4/GPT-3.5，强大的理解能力
-- 🔴 **Gemini** - Google AI，多模态支持
-- 🟣 **Claude** - Anthropic，长文本处理
-- 🟠 **AWS Bedrock** - 企业级AI服务
-
-#### 2️⃣ **Git平台集成**
-```java
-// 统一的仓库端口，支持多平台
-RepositoryPort repoPort = new GitHubAdapter(tempDir);
-// 或
-RepositoryPort repoPort = new GiteeAdapter(tempDir);
-
-CloneRequest request = CloneRequest.builder()
-    .url("https://github.com/user/project")
-    .branch("main")
-    .build();
-Path projectPath = repoPort.cloneRepository(request);
-```
-
-**支持的Git平台**：
-- 🐙 **GitHub** - 全球最大代码托管平台
-- 🍊 **Gitee** - 国内高速访问
-- 🦊 **GitLab** - 私有部署支持（扩展中）
-
-#### 3️⃣ **智能分析引擎**
-```java
-// 核心分析服务，自动处理多语言项目
-ProjectAnalysisService analysisService;
-AnalysisTask task = analysisService.analyzeProject(project);
-
-// 支持异步分析、批量处理、智能缓存
-CompletableFuture<ReviewReport> future = 
-    analysisService.analyzeProjectAsync(project);
-```
-
-**分析能力**：
-- 📊 **代码质量** - 复杂度、重复率、命名规范
-- 🏗️ **架构设计** - 设计模式、SOLID原则、依赖分析
-- 🔒 **安全性** - 漏洞检测、敏感信息扫描
-- ⚡ **性能** - 性能瓶颈、资源使用
-- 📚 **文档** - 文档完整性、注释质量
-
-#### 4️⃣ **多维度评分系统**
-```java
-// 基于AI的智能评分
-HackathonScoringService scoringService;
-HackathonScore score = scoringService.calculateScore(project, report);
-
-// 自定义评分维度和权重
-score.getCodeQuality();      // 代码质量 (40%)
-score.getInnovation();        // 创新性 (30%)
-score.getCompleteness();      // 完整性 (20%)
-score.getDocumentation();     // 文档 (10%)
-```
-
-#### 5️⃣ **报告生成系统**
-```java
-// 多格式报告生成
-ReportGenerationService reportService;
-
-// Markdown报告
-reportService.saveReport(report, outputPath, "markdown");
-
-// JSON结构化数据
-reportService.saveReport(report, outputPath, "json");
-
-// HTML可视化报告
-reportService.saveReport(report, outputPath, "html");
-```
-
-#### 6️⃣ **缓存与性能优化**
-```yaml
-cache:
-  enabled: true
-  type: "file"  # 或 redis、memory
-  ttlHours: 24
-  maxConcurrency: 20  # 并发分析数
-```
-
-### 🔧 如何扩展新的应用
-
-参考黑客松示例，只需4步即可创建新应用：
-
-**Step 1: 创建领域模型**
-```java
-// application/yourapp/model/YourDomainModel.java
-@Data
-@Builder
-public class YourDomainModel {
-    private String id;
-    private String name;
-    // 您的业务字段
-}
-```
-
-**Step 2: 创建应用服务**
-```java
-// application/yourapp/service/YourApplicationService.java
-public class YourApplicationService {
-    private final ProjectAnalysisService analysisService;  // 复用
-    private final ReportGenerationService reportService;   // 复用
+ai-reviewer:
+  # File scanner configuration
+  scanner:
+    include-patterns:
+      - "**/*.java"
+      - "**/*.py"
+      - "**/*.js"
+    exclude-patterns:
+      - "**/target/**"
+      - "**/build/**"
+      - "**/node_modules/**"
+      - "**/.git/**"
+    max-file-size: "10MB"
+  
+  # Parser configuration
+  parser:
+    enabled-parsers:
+      - java
+      - python
+      - javascript
+      - text
+  
+  # AI service configuration
+  ai:
+    provider: deepseek              # or "openai", "claude", etc.
+    model: deepseek-coder           # or "gpt-4", "claude-3", etc.
+    api-key: ${AI_API_KEY}          # Use environment variable
+    endpoint: https://api.deepseek.com/v1/chat/completions
     
-    public YourResult process(YourInput input) {
-        // 您的业务逻辑
+    # Prompts
+    sysPrompt: "You are an expert code reviewer. Provide constructive feedback on the following code."
+    userPrompt: |
+      Please review this code and provide:
+      1. Code quality assessment
+      2. Potential bugs or issues
+      3. Performance improvements
+      4. Best practice recommendations
+      
+      Code: %s
+    
+    # AI parameters
+    temperature: 0.7
+    max-tokens: 2000
+    timeout-seconds: 30
+    max-retries: 3
+  
+  # Processor configuration
+  processor:
+    type: code-review
+    output-format: markdown
+    output-path: ./reports
+  
+  # Executor configuration
+  executor:
+    thread-pool-size: 10
+    max-queue-size: 100
+
+# Spring Boot Configuration
+spring:
+  application:
+    name: ai-reviewer
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    top.yumbo.ai: DEBUG
+```
+
+### Configuration via Properties
+
+You can also use `application.properties`:
+
+```properties
+ai-reviewer.ai.provider=deepseek
+ai-reviewer.ai.model=deepseek-coder
+ai-reviewer.ai.api-key=${AI_API_KEY}
+ai-reviewer.ai.endpoint=https://api.deepseek.com/v1/chat/completions
+ai-reviewer.scanner.include-patterns[0]=**/*.java
+ai-reviewer.scanner.exclude-patterns[0]=**/target/**
+ai-reviewer.processor.output-path=./reports
+ai-reviewer.executor.thread-pool-size=10
+```
+
+### Environment Variables
+
+Recommended environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `AI_API_KEY` | Your AI service API key | `sk-xxx` |
+| `AI_PROVIDER` | AI provider name | `deepseek`, `openai` |
+| `AI_MODEL` | AI model to use | `deepseek-coder`, `gpt-4` |
+| `AI_ENDPOINT` | AI service endpoint | `https://api.deepseek.com/v1/chat/completions` |
+
+## 📖 Usage
+
+### As a Spring Boot Starter
+
+**1. Add dependency to your `pom.xml`:**
+
+```xml
+<dependency>
+    <groupId>top.yumbo.ai</groupId>
+    <artifactId>ai-reviewer-starter</artifactId>
+    <version>1.0</version>
+</dependency>
+```
+
+**2. Inject and use AIEngine:**
+
+```java
+@SpringBootApplication
+public class MyApplication {
+    
+    @Autowired
+    private AIEngine aiEngine;
+    
+    @Autowired
+    private AIReviewerProperties properties;
+    
+    public void reviewCode(String targetPath) {
+        ExecutionContext context = ExecutionContext.builder()
+            .targetDirectory(Paths.get(targetPath))
+            .includePatterns(properties.getScanner().getIncludePatterns())
+            .excludePatterns(properties.getScanner().getExcludePatterns())
+            .aiConfig(buildAIConfig())
+            .processorConfig(buildProcessorConfig())
+            .threadPoolSize(10)
+            .build();
+        
+        ProcessResult result = aiEngine.execute(context);
+        
+        if (result.isSuccess()) {
+            System.out.println("Review completed: " + result.getReportPath());
+        }
     }
 }
 ```
 
-**Step 3: 创建CLI入口**
-```java
-// application/yourapp/cli/YourCommandLineApp.java
-public class YourCommandLineApp {
-    public static void main(String[] args) {
-        // 参考 HackathonCommandLineApp 实现
-    }
-}
+### As a Standalone Library
+
+**1. Add dependencies:**
+
+```xml
+<dependency>
+    <groupId>top.yumbo.ai</groupId>
+    <artifactId>ai-reviewer-core</artifactId>
+    <version>1.0</version>
+</dependency>
+<dependency>
+    <groupId>top.yumbo.ai</groupId>
+    <artifactId>ai-reviewer-adaptor-parser</artifactId>
+    <version>1.0</version>
+</dependency>
+<dependency>
+    <groupId>top.yumbo.ai</groupId>
+    <artifactId>ai-reviewer-adaptor-ai</artifactId>
+    <version>1.0</version>
+</dependency>
+<dependency>
+    <groupId>top.yumbo.ai</groupId>
+    <artifactId>ai-reviewer-adaptor-processor</artifactId>
+    <version>1.0</version>
+</dependency>
 ```
 
-**Step 4: 配置依赖注入**
+**2. Create and configure the engine:**
+
 ```java
-// infrastructure/di/YourModule.java
-public class YourModule extends AbstractModule {
+// Create adapter registry
+AdapterRegistry registry = new AdapterRegistry();
+
+// Register parsers
+registry.registerParser(new JavaFileParser());
+registry.registerParser(new PythonFileParser());
+registry.registerParser(new JavaScriptFileParser());
+
+// Register AI service
+AIConfig aiConfig = AIConfig.builder()
+    .provider("deepseek")
+    .model("deepseek-coder")
+    .apiKey(System.getenv("AI_API_KEY"))
+    .endpoint("https://api.deepseek.com/v1/chat/completions")
+    .build();
+registry.registerAIService(new HttpBasedAIAdapter(aiConfig));
+
+// Register processor
+registry.registerProcessor(new CodeReviewProcessor());
+
+// Create engine
+AIEngine engine = new AIEngine(registry);
+
+// Execute review
+ExecutionContext context = ExecutionContext.builder()
+    .targetDirectory(Paths.get("/path/to/code"))
+    .includePatterns(List.of("**/*.java"))
+    .excludePatterns(List.of("**/target/**"))
+    .aiConfig(aiConfig)
+    .processorConfig(ProcessorConfig.builder()
+        .processorType("code-review")
+        .outputFormat("markdown")
+        .outputPath(Paths.get("./report.md"))
+        .build())
+    .threadPoolSize(10)
+    .build();
+
+ProcessResult result = engine.execute(context);
+```
+
+## 📦 Module Details
+
+### ai-reviewer-api
+
+**Core interfaces and data models**
+
+- `IFileParser` - Interface for file parsing adapters
+- `IAIService` - Interface for AI service adapters
+- `IResultProcessor` - Interface for result processing adapters
+- `PreProcessedData`, `AIResponse`, `ProcessResult` - Data transfer objects
+- `AIConfig`, `ProcessorConfig`, `FileMetadata` - Configuration models
+
+### ai-reviewer-common
+
+**Shared utilities and exception handling**
+
+- `AIReviewerException` - Base exception class
+- `ParseException`, `AIServiceException`, `ProcessorException` - Specific exceptions
+- `FileUtil`, `StringUtil` - Utility classes
+- `Constants` - Global constants
+
+### ai-reviewer-core
+
+**Main engine and orchestration logic**
+
+- `AIEngine` - Main orchestration engine with multi-threaded processing
+- `AdapterRegistry` - Manages all adapters with SPI support
+- `ExecutionContext` - Execution state and configuration
+- `FileScanner` - Discovers files in target directory
+- `FileFilter` - Filters files based on patterns
+
+### ai-reviewer-adaptor-parser
+
+**File parsing adapters**
+
+- `JavaFileParser` - Parses Java files using JavaParser
+- `PythonFileParser` - Parses Python files
+- `JavaScriptFileParser` - Parses JavaScript files
+- `PlainTextFileParser` - Fallback for unsupported file types
+
+### ai-reviewer-adaptor-ai
+
+**AI service adapters**
+
+- `HttpBasedAIAdapter` - Generic HTTP-based AI service adapter
+  - Supports OpenAI, DeepSeek, Claude, and compatible APIs
+  - Configurable endpoints, models, and parameters
+  - Built-in retry and timeout handling
+
+### ai-reviewer-adaptor-processor
+
+**Result processing adapters**
+
+- `CodeReviewProcessor` - Generates markdown code review reports
+  - File-by-file analysis
+  - Summary statistics
+  - Performance metrics
+
+### ai-reviewer-starter
+
+**Spring Boot starter with auto-configuration**
+
+- `AIReviewerAutoConfiguration` - Auto-configures all beans
+- `AIReviewerProperties` - Configuration properties binding
+- Automatic adapter discovery via SPI
+- Zero-configuration setup for Spring Boot applications
+
+## 🔧 Extending the Engine
+
+### Creating a Custom Parser
+
+```java
+public class CustomParser implements IFileParser {
     @Override
-    protected void configure() {
-        bind(YourApplicationService.class);
+    public boolean support(File file) {
+        return file.getName().endsWith(".custom");
+    }
+    
+    @Override
+    public PreProcessedData parse(File file) throws Exception {
+        String content = FileUtil.readFileToString(file);
+        
+        FileMetadata metadata = FileMetadata.builder()
+            .filePath(file.toPath())
+            .fileName(file.getName())
+            .fileType("custom")
+            .build();
+        
+        return PreProcessedData.builder()
+            .metadata(metadata)
+            .content(content)
+            .parserName("CustomParser")
+            .build();
+    }
+    
+    @Override
+    public int getPriority() {
+        return 100;
+    }
+}
+
+// Register the parser
+registry.registerParser(new CustomParser());
+```
+
+### Creating a Custom AI Service
+
+```java
+public class CustomAIService implements IAIService {
+    @Override
+    public AIResponse invoke(PreProcessedData data, AIConfig config) throws Exception {
+        // Call your custom AI service
+        String response = callCustomAI(data.getContent(), config);
+        
+        return AIResponse.builder()
+            .originalData(data)
+            .aiGeneratedContent(response)
+            .provider("custom")
+            .model(config.getModel())
+            .success(true)
+            .build();
+    }
+    
+    @Override
+    public boolean support(String provider) {
+        return "custom".equalsIgnoreCase(provider);
+    }
+}
+
+// Register the AI service
+registry.registerAIService(new CustomAIService());
+```
+
+### Creating a Custom Processor
+
+```java
+public class CustomProcessor implements IResultProcessor {
+    @Override
+    public ProcessResult process(List<AIResponse> responses, ProcessorConfig config) {
+        // Custom processing logic
+        String report = generateCustomReport(responses);
+        Path outputPath = saveReport(report, config);
+        
+        return ProcessResult.builder()
+            .success(true)
+            .processedCount(responses.size())
+            .reportPath(outputPath)
+            .build();
+    }
+    
+    @Override
+    public boolean support(String processorType) {
+        return "custom".equalsIgnoreCase(processorType);
+    }
+}
+
+// Register the processor
+registry.registerProcessor(new CustomProcessor());
+```
+
+### Using SPI for Auto-Discovery
+
+Create `META-INF/services/top.yumbo.ai.api.parser.IFileParser`:
+```
+com.example.CustomParser
+```
+
+Create `META-INF/services/top.yumbo.ai.api.ai.IAIService`:
+```
+com.example.CustomAIService
+```
+
+Create `META-INF/services/top.yumbo.ai.api.processor.IResultProcessor`:
+```
+com.example.CustomProcessor
+```
+
+## 💡 Examples
+
+### Example 1: Review Java Project
+
+```java
+ExecutionContext context = ExecutionContext.builder()
+    .targetDirectory(Paths.get("./src"))
+    .includePatterns(List.of("**/*.java"))
+    .excludePatterns(List.of("**/test/**", "**/target/**"))
+    .aiConfig(aiConfig)
+    .processorConfig(processorConfig)
+    .threadPoolSize(5)
+    .build();
+
+ProcessResult result = engine.execute(context);
+System.out.println("Files reviewed: " + result.getProcessedCount());
+System.out.println("Report: " + result.getReportPath());
+```
+
+### Example 2: Review Multiple File Types
+
+```java
+ExecutionContext context = ExecutionContext.builder()
+    .targetDirectory(Paths.get("./project"))
+    .includePatterns(List.of("**/*.java", "**/*.py", "**/*.js"))
+    .excludePatterns(List.of("**/node_modules/**", "**/.git/**"))
+    .aiConfig(aiConfig)
+    .processorConfig(processorConfig)
+    .build();
+
+ProcessResult result = engine.execute(context);
+```
+
+### Example 3: Custom Prompts
+
+```java
+AIConfig customConfig = AIConfig.builder()
+    .provider("deepseek")
+    .model("deepseek-coder")
+    .apiKey(apiKey)
+    .sysPrompt("You are a security expert. Focus on security vulnerabilities.")
+    .userPrompt("Analyze this code for security issues:\n%s")
+    .temperature(0.3)
+    .build();
+```
+
+## 🐛 Troubleshooting
+
+### Issue: AIEngine Bean Not Found
+
+**Error**: `No qualifying bean of type 'top.yumbo.ai.core.AIEngine'`
+
+**Solution**: 
+1. Ensure `ai-reviewer-starter` is in dependencies
+2. Check that `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` exists in the starter jar
+3. Verify Spring Boot version is 3.x
+4. Try adding `@ComponentScan("top.yumbo.ai")` to your main class
+
+### Issue: Module Classes Not Found at Runtime
+
+**Error**: `ClassNotFoundException` for sub-modules
+
+**Solution**:
+1. Build from parent: `mvn clean install`
+2. Include all dependencies or use the fat jar approach
+3. For Spring Boot apps, ensure all transitive dependencies are included
+
+### Issue: AI Service Timeout
+
+**Error**: `AIServiceException: Request timeout`
+
+**Solution**:
+1. Increase timeout: `ai-reviewer.ai.timeout-seconds=60`
+2. Check network connectivity
+3. Verify API key and endpoint
+4. Enable retry: `ai-reviewer.ai.max-retries=3`
+
+### Issue: Parser Not Found
+
+**Error**: `No parser found for file type`
+
+**Solution**:
+1. Check file extension matches parser patterns
+2. Verify parser is registered in `AdapterRegistry`
+3. Add custom parser if needed
+4. Check SPI configuration for auto-discovery
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/yourusername/AI-Reviewer.git
+
+# Build
+mvn clean install
+
+# Run tests
+mvn test
+
+# Run with debug
+mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
+```
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Spring Boot](https://spring.io/projects/spring-boot) - Application framework
+- [JavaParser](https://javaparser.org/) - Java code parsing
+- [OkHttp](https://square.github.io/okhttp/) - HTTP client
+- [Lombok](https://projectlombok.org/) - Boilerplate code reduction
+- [Jackson](https://github.com/FasterXML/jackson) - JSON processing
+
+## 📞 Support
+
+- 📧 Email: support@example.com
+- 💬 Issues: [GitHub Issues](https://github.com/yourusername/AI-Reviewer/issues)
+- 📖 Documentation: [Wiki](https://github.com/yourusername/AI-Reviewer/wiki)
+
+---
+
+**Made with ❤️ by the AI Reviewer Team**
+- `AIEngine` - Orchestrates the entire pipeline
+- `AdapterRegistry` - Manages all adapters
+- `FileScanner` - Discovers files
+- `FileFilter` - Applies include/exclude patterns
+### Adaptor Modules
+**Parser Adapters:**
+- `JavaFileParser` - Parses Java files using JavaParser
+- `PlainTextFileParser` - Fallback parser for all text files
+**AI Adapters:**
+- `OpenAIAdapter` - Integrates with OpenAI API
+**Processor Adapters:**
+- `CodeReviewProcessor` - Generates code review reports
+## 🔧 Extension Points
+### Adding a Custom Parser
+```java
+public class MyCustomParser implements IFileParser {
+    @Override
+    public boolean support(File file) {
+        return file.getName().endsWith(".custom");
+    }
+    @Override
+    public PreProcessedData parse(File file) throws Exception {
+        // Your parsing logic
     }
 }
 ```
-
-**Step 5: 创建应用文档** 📚
-```bash
-# 1. 创建应用文档目录
-mkdir doc/YOUR_APP
-
-# 2. 创建标准文档文件
-touch doc/YOUR_APP/YOUR_APP-GUIDE.md              # 完整使用指南
-touch doc/YOUR_APP/YOUR_APP-QUICK-REFERENCE.md    # 快速参考卡
-
-# 3. 更新文档索引
-# 在 doc/README.md 中添加您的应用文档导航
+Register via SPI in `META-INF/services/top.yumbo.ai.api.parser.IFileParser`:
 ```
-
-**文档组织规范**：
+com.yourpackage.MyCustomParser
 ```
-doc/
-├── YOUR_APP/                    # 您的应用文档目录
-│   ├── YOUR_APP-GUIDE.md        # 详细使用指南（必需）
-│   ├── YOUR_APP-QUICK-REFERENCE.md  # 快速参考卡（推荐）
-│   ├── YOUR_APP-IMPLEMENTATION-GUIDE.md  # 实现指南（可选）
-│   └── YOUR_APP-CONFIG-QUICKREF.md       # 配置参考（可选）
-│
-├── HACKATHON/                   # 黑客松应用（示例）
-│   ├── HACKATHON-GUIDE.md
-│   └── ...
-│
-└── README.md                    # 文档索引（更新后添加您的应用）
-```
-
-**文档编写建议**：
-- ✅ 参考 `doc/HACKATHON/` 目录下的文档结构
-- ✅ 使用统一的命名规范：`应用名-文档类型.md`
-- ✅ 在 `doc/README.md` 中添加您的应用导航链接
-- ✅ 在项目主 `README.md` 中添加您的应用介绍
-
-### 📖 详细文档
-
-- 📘 **[黑客松完整指南](./doc/HACKATHON/HACKATHON-GUIDE.md)** - 详细的使用说明
-- 🎯 **[黑客松快速参考](./doc/HACKATHON/HACKATHON-QUICK-REFERENCE.md)** - 一页纸速查表
-- 🏗️ **[架构设计文档](./doc/CLI-ARCHITECTURE.md)** - 架构图和设计原理  
-- 🔄 **[CLI重构说明](./doc/CLI-REFACTORING.md)** - 如何设计清晰的CLI
-- 📦 **[六边形架构指南](./md/20251111234200-HEXAGONAL-QUICKSTART-GUIDE.md)** - 架构最佳实践
-
-### 🎯 设计理念
-
-- **领域驱动设计（DDD）**：清晰的领域模型和业务逻辑
-- **六边形架构**：核心业务逻辑与外部依赖完全解耦
-- **端口与适配器模式**：灵活的技术栈切换能力
-- **依赖倒置原则**：面向接口编程，高度可测试
-- **单一职责原则**：每个组件职责清晰明确
-
-### ⭐ 最新进展
-
-**🎉 Phase 1 架构重构完成（2025-11-12）**
-
-- ✅ **架构清晰度 +50%** - 95% 符合六边形架构原则
-- ✅ **依赖倒置 +200%** - 完全符合 SOLID 原则
-- ✅ **模块独立性 +70%** - 更好的可测试性和可维护性
-- ✅ **统一异常体系** - 业务异常与技术异常完全分离
-- ✅ **零编码问题** - 完美保持 UTF-8 编码
-- ✅ **统一仓库端口** - RepositoryPort 统一多平台访问
-
-详见：[Phase 1 完成报告](md/20251112085100-PHASE1-COMPLETION-REPORT.md)
-
----
-
-## ✨ 核心特性
-
-### 🏗️ 架构特性
-
-- **标准六边形架构** - 95% 符合六边形架构原则，领域层与基础设施完全解耦
-- **统一端口设计** - RepositoryPort 统一多平台代码仓库访问（GitHub/Gitee/GitLab）
-- **完整的异常体系** - 业务异常（DomainException）与技术异常（TechnicalException）分离
-- **依赖倒置实现** - 所有外部依赖通过端口接口访问
-- **高度可扩展** - 通过适配器模式轻松添加新功能
-
-### 🤖 AI 能力
-
-- **多 AI 服务支持** - 支持 DeepSeek、OpenAI、Gemini、Claude 等多种 AI 提供商
-- **智能模型选择** - 根据任务类型自动选择最合适的 AI 模型
-- **异步并发分析** - 支持批量异步分析，提升分析效率
-- **智能缓存** - 基于文件的缓存系统，避免重复分析
-- **错误重试机制** - 自动重试失败的 AI 请求
-
-### 🎯 黑客松专属
-
-- **完整的项目管理** - 团队、参与者、提交记录全生命周期管理
-- **自动评分系统** - 多维度智能评分（创新性、实用性、代码质量等）
-- **排行榜生成** - 实时生成黑客松排行榜
-- **GitHub/Gitee 集成** - 直接从代码托管平台克隆项目进行评审
-- **批量处理** - 同时处理多个参赛项目
-
-### 📊 分析能力
-
-- **多维度分析** - 代码质量、架构设计、性能优化、安全性等全方位评估
-- **多语言支持** - 支持 Java、Python、JavaScript、TypeScript、Go、Rust、C++、C# 等主流语言
-- **技术债务评估** - 识别和量化技术债务
-- **架构分析** - 评估架构设计的合理性和可扩展性
-- **业务价值评估** - 评估项目的商业价值和创新性
-
-### 📝 报告能力
-
-- **多格式报告** - 支持 Markdown、HTML、JSON 等多种报告格式
-- **详细的评分** - 提供各维度详细评分和依据
-- **改进建议** - 针对性的改进建议和最佳实践推荐
-- **可视化图表** - 生成架构图、依赖图等可视化内容
-- **对比分析** - 支持多版本对比分析
-
----
-
-## 🏛️ 架构设计
-
-### 六边形架构视图
-
-```
-┌───────────────────────────────────────────────────────────────────┐
-│                        外部世界 (External)                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────┐ │
-│  │     CLI     │  │  REST API   │  │  Hackathon  │  │  GitHub  │ │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────┬────┘ │
-└─────────┼─────────────────┼─────────────────┼──────────────┼──────┘
-          │                 │                 │              │
-          │    Input        │                 │              │
-          │   Adapters      │                 │              │
-┌─────────▼─────────────────▼─────────────────▼──────────────▼──────┐
-│                         Adapter Layer                              │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                      Input Adapters                          │ │
-│  │  • CommandLineAdapter                                        │ │
-│  │  • APIAdapter                                                │ │
-│  │  • HackathonAdapter                                          │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────┬───────────────────────────────────┘
-                                 │
-                                 │ Uses
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                        Application Layer                           │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                    Application Services                       │ │
-│  │  • ProjectAnalysisService                                    │ │
-│  │  • ReportGenerationService                                   │ │
-│  │  • HackathonAnalysisService                                  │ │
-│  │  • HackathonScoringService                                   │ │
-│  │  • TeamManagementService                                     │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                      Output Ports                            │ │
-│  │  • RepositoryPort       • AIServicePort                      │ │
-│  │  • FileSystemPort       • CachePort                          │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────┬───────────────────────────────────┘
-                                 │
-                                 │ Uses
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                          Domain Layer                              │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                    Core Domain Models                        │ │
-│  │  • Project              • ReviewReport                       │ │
-│  │  • AnalysisTask         • SourceFile                         │ │
-│  │  • ProjectMetadata      • AnalysisProgress                   │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                  Hackathon Domain Models                     │ │
-│  │  • HackathonProject     • Team                               │ │
-│  │  • Submission           • HackathonScore                     │ │
-│  │  • Participant          • ParticipantRole                    │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                    Exception Hierarchy                       │ │
-│  │  • DomainException      • TechnicalException                 │ │
-│  │  • ProjectNotFoundException                                  │ │
-│  │  • AnalysisFailedException                                   │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────┘
-                                 ▲
-                                 │ Implemented by
-                                 │
-┌────────────────────────────────┴───────────────────────────────────┐
-│                        Adapter Layer                               │
-│  ┌──────────────────────────────────────────────────────────────┐ │
-│  │                     Output Adapters                          │ │
-│  │  • GitHubAdapter        • GiteeAdapter                       │ │
-│  │  • DeepSeekAIAdapter    • OpenAIAdapter                      │ │
-│  │  • GeminiAdapter        • ClaudeAdapter                      │ │
-│  │  • LocalFileSystemAdapter                                    │ │
-│  │  • FileCacheAdapter                                          │ │
-│  └──────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────┬───────────────────────────────────┘
-                                 │
-                                 │ Connects to
-                                 ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                        外部世界 (External)                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────┐ │
-│  │  AI Service │  │  File Sys   │  │    Cache    │  │  GitHub  │ │
-│  │  (DeepSeek) │  │   (Local)   │  │   (File)    │  │  (API)   │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └──────────┘ │
-└────────────────────────────────────────────────────────────────────┘
-```
-
-### 包结构
-
-> 📘 **详细架构说明**: 查看 [完整架构文档](./doc/ARCHITECTURE.md) 了解设计理念和扩展指南
-
-```
-src/main/java/top/yumbo/ai/reviewer/
-│
-├── 🎯 domain/                          # 领域层 - 核心业务逻辑
-│   ├── model/                          # 核心领域模型
-│   │   ├── Project.java
-│   │   ├── ReviewReport.java
-│   │   ├── SourceFile.java
-│   │   ├── ProjectMetadata.java
-│   │   ├── ProjectType.java
-│   │   └── ast/                        # AST相关模型
-│   │       ├── CodeInsight.java
-│   │       ├── ClassStructure.java
-│   │       ├── MethodInfo.java
-│   │       ├── ComplexityMetrics.java
-│   │       ├── CodeSmell.java
-│   │       └── DesignPattern.java
-│   ├── core/                           # 核心领域
-│   │   └── exception/                  # 统一异常体系
-│   │       ├── DomainException.java
-│   │       ├── TechnicalException.java
-│   │       ├── ProjectNotFoundException.java
-│   │       ├── AnalysisFailedException.java
-│   │       ├── RepositoryAccessException.java
-│   │       ├── FileSystemException.java
-│   │       ├── AIServiceException.java
-│   │       └── CacheException.java
-│   └── hackathon/                      # 黑客松子域
-│       └── model/                      # 黑客松领域模型
-│           ├── HackathonProject.java
-│           ├── Team.java
-│           ├── Participant.java
-│           ├── Submission.java
-│           ├── HackathonScore.java
-│           └── DimensionScoringRegistry.java
-│
-├── 📋 application/                      # 应用层 - 用例编排
-│   ├── service/                         # 核心应用服务
-│   │   ├── ProjectAnalysisService.java
-│   │   ├── ReportGenerationService.java
-│   │   ├── QualityGateEngine.java
-│   │   ├── AIModelSelector.java
-│   │   ├── ComparisonReportGenerator.java
-│   │   └── prompt/
-│   │       └── AIPromptBuilder.java
-│   ├── hackathon/                       # 黑客松应用
-│   │   ├── service/                     # 黑客松应用服务
-│   │   │   ├── HackathonAnalysisService.java
-│   │   │   ├── HackathonScoringService.java
-│   │   │   ├── HackathonIntegrationService.java
-│   │   │   ├── LeaderboardService.java
-│   │   │   └── TeamManagementService.java
-│   │   └── cli/                         # 黑客松CLI
-│   │       ├── HackathonCommandLineApp.java
-│   │       └── HackathonInteractiveApp.java
-│   └── port/                            # 端口接口
-│       ├── input/                       # 输入端口（用例接口）
-│       │   ├── ProjectAnalysisUseCase.java
-│       │   └── ReportGenerationUseCase.java
-│       └── output/                      # 输出端口（外部依赖接口）
-│           ├── RepositoryPort.java      # 统一仓库接口
-│           ├── AIServicePort.java       # AI服务接口
-│           ├── ASTParserPort.java       # AST解析器接口
-│           ├── FileSystemPort.java      # 文件系统接口
-│           ├── CachePort.java           # 缓存接口
-│           ├── S3StoragePort.java       # S3存储接口
-│           ├── CloneRequest.java        # 值对象
-│           └── RepositoryMetrics.java   # 值对象
-│
-├── 🔌 adapter/                          # 适配器层 - 技术实现
-│   ├── input/                           # 输入适配器
-│   │   ├── cli/                         # 命令行界面
-│   │   │   ├── CommandLineAdapter.java
-│   │   │   └── CommandLineInterface.java
-│   │   └── api/                         # REST API
-│   │       └── APIAdapter.java
-│   │
-│   ├── storage/                         # ✨ 存储模块（重构后）
-│   │   ├── s3/                          # AWS S3存储
-│   │   │   ├── S3StorageAdapter.java
-│   │   │   ├── S3StorageConfig.java
-│   │   │   └── S3StorageExample.java
-│   │   ├── local/                       # 本地文件系统
-│   │   │   └── LocalFileSystemAdapter.java
-│   │   ├── cache/                       # 缓存
-│   │   │   └── FileCacheAdapter.java
-│   │   └── archive/                     # 压缩归档
-│   │       └── ZipArchiveAdapter.java
-│   │
-│   ├── ai/                              # ✨ AI服务模块（重构后）
-│   │   ├── bedrock/                     # AWS Bedrock
-│   │   │   └── BedrockAdapter.java
-│   │   ├── config/                      # AI配置
-│   │   │   └── AIServiceConfig.java
-│   │   ├── http/                        # HTTP通用客户端
-│   │   │   └── HttpBasedAIAdapter.java
-│   │   ├── decorator/                   # 装饰器
-│   │   │   └── LoggingAIServiceDecorator.java
-│   │   └── AIAdapterFactory.java        # AI适配器工厂
-│   │
-│   ├── parser/                          # ✨ 解析器模块（重构后）
-│   │   ├── code/                        # 代码解析器
-│   │   │   ├── AbstractASTParser.java
-│   │   │   ├── ASTParserFactory.java
-│   │   │   ├── java/
-│   │   │   │   └── JavaParserAdapter.java
-│   │   │   ├── python/
-│   │   │   │   └── PythonParserAdapter.java
-│   │   │   ├── javascript/
-│   │   │   │   └── JavaScriptParserAdapter.java
-│   │   │   ├── go/
-│   │   │   │   └── GoParserAdapter.java
-│   │   │   └── cpp/
-│   │   │       └── CppParserAdapter.java
-│   │   └── detector/                    # 语言检测器
-│   │       ├── LanguageDetector.java
-│   │       ├── LanguageDetectorRegistry.java
-│   │       ├── LanguageFeatures.java
-│   │       └── language/                # 具体检测器
-│   │           ├── GoLanguageDetector.java
-│   │           ├── CppLanguageDetector.java
-│   │           └── RustLanguageDetector.java
-│   │
-│   ├── repository/                      # ✨ 仓库模块（重构后）
-│   │   └── git/
-│   │       └── GitRepositoryAdapter.java
-│   │
-│   └── output/                          # 输出适配器
-│       ├── cicd/                        # CI/CD集成
-│       │   └── CICDIntegration.java
-│       └── visualization/               # 可视化
-│           └── ChartGenerator.java
-│
-└── 🏗️ infrastructure/                   # 基础设施层
-    ├── config/                          # 配置管理
-    │   ├── Configuration.java
-    │   └── ConfigurationLoader.java
-    ├── di/                              # 依赖注入
-    │   └── ApplicationModule.java
-    └── factory/                         # 工厂类
-        └── AIServiceFactory.java
-```
-
-**架构重构亮点** ✨:
-- ✅ 功能模块化：按功能领域组织（storage、ai、parser、repository）
-- ✅ 职责清晰：每个包有明确的功能定位
-- ✅ 易于扩展：新增功能只需在对应模块添加类
-- ✅ 符合DDD：领域驱动设计原则
-
-### 核心设计模式
-
-| 模式 | 应用场景 | 示例 |
-|------|---------|------|
-| **六边形架构** | 整体架构 | 领域层 ← 应用层 ← 适配器层 |
-| **端口与适配器** | 外部依赖 | RepositoryPort ← GitHubAdapter |
-| **依赖倒置** | 所有依赖 | Service → Port ← Adapter |
-| **Builder 模式** | 领域对象构建 | Project.builder() |
-| **策略模式** | AI 模型选择 | AIModelSelector |
-| **工厂模式** | 异常创建 | DomainException.of() |
-| **适配器模式** | 外部系统集成 | DeepSeekAIAdapter |
-
----
-
-## 🚀 快速开始
-
-### 环境要求
-
-- **Java**: 17 或更高版本
-- **Maven**: 3.8 或更高版本
-- **Git**: 用于克隆仓库
-- **AI API Key**: DeepSeek、OpenAI 等（至少一个）
-
-### 安装
-
-#### 1. 克隆项目
-
-```bash
-git clone https://github.com/jinhua10/ai-reviewer.git
-cd ai-reviewer
-```
-
-#### 2. 配置 AI 服务
-
-编辑 `src/main/resources/config.yaml`：
-
-```yaml
-aiService:
-  provider: "deepseek"  # 选择AI提供商
-  apiKey: "your-api-key-here"
-  baseUrl: "https://api.deepseek.com/v1/chat/completions"
-  model: "deepseek-chat"
-  maxTokens: 8000
-  temperature: 0
-  maxConcurrency: 20
-```
-
-#### 3. 编译项目
-
-```bash
-mvn clean compile
-```
-
-#### 4. 运行测试
-
-```bash
-mvn test
-```
-
-### 使用示例
-
-#### 示例 1：分析本地项目
-
+### Adding a Custom AI Service
 ```java
-import top.yumbo.ai.reviewer.application.service.ProjectAnalysisService;
-import top.yumbo.ai.reviewer.domain.model.Project;
-import top.yumbo.ai.reviewer.domain.model.AnalysisTask;
-
-// 1. 创建项目对象
-Project project = Project.builder()
-    .name("my-project")
-    .rootPath(Paths.get("/path/to/project"))
-    .type(ProjectType.JAVA_MAVEN)
-    .build();
-
-// 2. 分析项目
-AnalysisTask task = analysisService.analyzeProject(project);
-
-// 3. 等待分析完成
-task.awaitCompletion();
-
-// 4. 获取报告
-ReviewReport report = task.getReport();
-System.out.println("总体评分: " + report.getOverallScore());
-```
-
-#### 示例 2：黑客松项目评分
-
-```java
-import top.yumbo.ai.reviewer.application.hackathon.service.*;
-import top.yumbo.ai.reviewer.domain.hackathon.model.*;
-
-// 1. 创建黑客松项目
-HackathonProject hackathonProject = HackathonProject.builder()
-    .name("awesome-project")
-    .team(team)
-    .build();
-
-// 2. 从GitHub克隆
-String repoUrl = "https://github.com/user/repo";
-Path localPath = gitHubAdapter.cloneRepository(repoUrl, "main");
-
-// 3. 扫描项目文件
-Project coreProject = fileSystemAdapter.scanProject(localPath);
-
-// 4. 分析和评分
-HackathonProject result = hackathonAnalysisService.analyzeProject(
-    hackathonProject, 
-    coreProject
-);
-
-// 5. 查看评分
-HackathonScore score = result.getLatestSubmission().getScore();
-System.out.println("创新性: " + score.getInnovationScore());
-System.out.println("实用性: " + score.getPracticalityScore());
-System.out.println("代码质量: " + score.getCodeQualityScore());
-System.out.println("总分: " + score.getTotalScore());
-```
-
-#### 示例 3：使用命令行工具
-
-```bash
-# 分析项目
-java -jar ai-reviewer.jar analyze --project /path/to/project --output report.md
-
-# 黑客松模式
-java -jar ai-reviewer.jar hackathon \
-  --github-url https://github.com/user/repo \
-  --team "Team Name" \
-  --output score.json
-```
-
----
-
-## 📚 文档
-
-### 完整文档列表
-
-本项目包含 **50,000+ 字** 的详细技术文档，涵盖架构设计、实现细节、测试报告等：
-
-#### 架构设计文档
-
-- [架构深度分析](md/20251112073000-ARCHITECTURE-DEEP-ANALYSIS.md) - 六边形架构详细解析
-- [Phase 1 完成报告](md/20251112085100-PHASE1-COMPLETION-REPORT.md) - 架构重构总结
-- [六边形架构指南](md/20251111234200-HEXAGONAL-QUICKSTART-GUIDE.md) - 快速入门指南
-- [架构对比分析](md/refactor/20251111234500-ARCHITECTURE-COMPARISON.md) - 重构前后对比
-
-#### 黑客松功能文档
-
-- [GitHub 集成完成](md/20251112062000-GITHUB-INTEGRATION-DAY2-COMPLETION.md)
-- [Gitee 集成完成](md/20251112064600-GITEE-INTEGRATION-COMPLETED.md)
-- [黑客松快速开始](md/20251112065100-GITEE-QUICK-START-GUIDE.md)
-- [GitHub Adapter 重构](md/20251112110730-GITHUB-ADAPTER-REFACTORING-COMPLETED.md)
-
-#### 测试报告
-
-- [测试完成报告](md/refactor/20251112011000-TEST-COMPLETION-REPORT.md)
-- [集成测试总结](md/20251112063500-GITHUB-INTEGRATION-TEST-FINAL-SUMMARY.md)
-- [DeepSeek 测试改进](md/20251112071600-DEEPSEEK-TEST-IMPROVEMENT.md)
-
-#### 实施指南
-
-- [CLI 用户指南](md/refactor/20251112030000-CLI-USER-GUIDE.md)
-- [项目交付清单](md/refactor/20251111234800-PROJECT-DELIVERY-CHECKLIST.md)
-- [下一步行动计划](md/20251112090000-NEXT-PHASE-ACTION-PLAN.md)
-
-### 在线文档
-
-访问 [项目 Wiki](https://github.com/jinhua10/ai-reviewer/wiki) 获取更多文档。
-
----
-
-## 🧪 测试
-
-### 测试覆盖
-
-本项目包含 **19 个测试类，100+ 测试方法**，涵盖单元测试、集成测试和端到端测试：
-
-```
-src/test/java/
-├── domain/model/              # 领域模型测试（5个测试类）
-│   ├── ProjectTest.java
-│   ├── ReviewReportTest.java
-│   ├── AnalysisTaskTest.java
-│   ├── SourceFileTest.java
-│   └── AnalysisProgressTest.java
-├── application/service/       # 应用服务测试（2个测试类）
-│   ├── ProjectAnalysisServiceTest.java
-│   └── ReportGenerationServiceTest.java
-├── adapter/                   # 适配器测试（5个测试类）
-│   ├── output/ai/
-│   │   ├── DeepSeekAIAdapterTest.java     # 10个测试
-│   │   └── BedrockAdapterTest.java         # 10个测试（AWS Bedrock）
-│   ├── output/cache/
-│   │   └── FileCacheAdapterTest.java       # 16个测试
-│   ├── output/filesystem/
-│   │   └── LocalFileSystemAdapterTest.java # 27个测试
-│   └── input/hackathon/
-│       └── adapter/output/
-│           ├── github/GitHubAdapterTest.java  # 9个测试
-│           └── gitee/GiteeAdapterTest.java    # 8个测试
-└── integration/               # 集成测试（7个测试类）
-    ├── adapter/
-    │   ├── ProjectAnalysisIntegrationTest.java
-    │   └── ReportGenerationIntegrationTest.java
-    ├── domain/
-    │   └── DomainModelIntegrationTest.java
-    ├── endtoend/
-    │   └── CommandLineEndToEndTest.java       # 15个测试
-    └── hackathon/
-        ├── GitHubIntegrationEndToEndTest.java # 9个测试
-        └── GiteeIntegrationEndToEndTest.java  # 9个测试
-```
-
-### 最新测试结果
-
-✅ **测试执行成功！** (2025-11-12)
-
-| 测试类 | 测试数 | 通过 | 失败 | 跳过 |
-|--------|--------|------|------|------|
-| **GiteeAdapterTest** | 8 | 8 | 0 | 0 |
-| **GitHubAdapterTest** | 9 | 9 | 0 | 0 |
-| **GiteeIntegrationEndToEndTest** | 9 | 9 | 0 | 0 |
-| **GitHubIntegrationEndToEndTest** | 9 | 9 | 0 | 0 |
-| **DeepSeekAIAdapterTest** | 10 | 9 | 1 | 0 |
-| **FileCacheAdapterTest** | 16 | 16 | 0 | 0 |
-| **LocalFileSystemAdapterTest** | 27 | 27 | 0 | 0 |
-| **BedrockAdapterTest** | 10 | 10 | 0 | 0 |
-| **其他测试** | 20+ | 20+ | 0 | 0 |
-| **总计** | **100+** | **99+** | **1** | **0** |
-
-**通过率**: ~99% ✅
-
-### 运行测试
-
-```bash
-# 运行所有测试
-mvn test
-
-# 运行特定测试类
-mvn test -Dtest=ProjectAnalysisServiceTest
-
-# 运行集成测试
-mvn test -Dtest=*IntegrationTest
-
-# 排除特定测试
-mvn test -Dtest='!BedrockAdapterTest'
-
-# 跳过测试编译
-mvn clean compile -DskipTests
-```
-
-### 测试报告
-
-测试执行后会生成详细的测试报告：
-
-```bash
-# 查看测试报告（Windows）
-start target\surefire-reports\index.html
-
-# 查看测试报告（Mac/Linux）
-open target/surefire-reports/index.html
-```
-
----
-
-## 🔧 配置
-
-### 配置文件
-
-项目使用 YAML 格式的配置文件：
-
-#### `config.yaml` - 主配置文件
-
-```yaml
-# AI服务配置
-aiService:
-  provider: "deepseek"
-  apiKey: "your-api-key"
-  model: "deepseek-chat"
-  maxTokens: 8000
-  temperature: 0
-  maxConcurrency: 20
-  connectTimeout: 300000
-  readTimeout: 60000
-
-# 缓存配置
-cache:
-  enabled: true
-  type: "file"
-  ttlHours: 24
-  maxSize: 1000
-
-# 文件扫描配置
-fileScan:
-  includePatterns:
-    - "*.java"
-    - "*.py"
-    - "*.js"
-    - "*.ts"
-  excludePatterns:
-    - "node_modules/**"
-    - "target/**"
-    - ".git/**"
-```
-
-#### `hackathon-config.yaml` - 黑客松专用配置
-
-```yaml
-hackathon:
-  fastMode: true
-  
-  # 评分维度权重
-  dimensionWeights:
-    architecture: 0.15
-    code_quality: 0.20
-    functionality: 0.25
-    business_value: 0.20
-    innovation_bonus: 0.10
-  
-  # 自动评分阈值
-  autoJudging:
-    enabled: true
-    thresholds:
-      excellent: 85
-      good: 70
-      fair: 50
-  
-  # 批量处理配置
-  batchProcessing:
-    enabled: true
-    maxConcurrentProjects: 5
-    projectTimeout: 60000
-```
-
-### 环境变量
-
-支持通过环境变量覆盖配置：
-
-```bash
-export AI_REVIEWER_API_KEY="your-api-key"
-export AI_REVIEWER_CACHE_DIR="/custom/cache/path"
-export AI_REVIEWER_MAX_CONCURRENCY="10"
-```
-
----
-
-## 🎯 使用场景
-
-### 1. 代码质量评估
-
-**场景**：团队需要定期评估代码质量，识别技术债务。
-
-```java
-// 分析项目
-AnalysisTask task = analysisService.analyzeProject(project);
-ReviewReport report = task.getReport();
-
-// 查看代码质量评分
-int codeQuality = report.getDimensionScore("code_quality");
-List<Issue> issues = report.getIssues();
-
-// 生成改进建议
-List<Recommendation> recommendations = report.getRecommendations();
-```
-
-**输出**：
-- 代码质量评分（0-100）
-- 发现的问题列表
-- 针对性改进建议
-- 技术债务评估
-
-### 2. 黑客松项目评分
-
-**场景**：黑客松组织者需要快速评估多个参赛项目。
-
-```java
-// 批量处理参赛项目
-List<HackathonProject> projects = loadProjectsFromGitHub();
-
-for (HackathonProject project : projects) {
-    // 克隆代码
-    Path localPath = gitHubAdapter.cloneRepository(
-        project.getRepositoryUrl(), "main"
-    );
-    
-    // 扫描和分析
-    Project coreProject = fileSystemAdapter.scanProject(localPath);
-    HackathonProject result = hackathonAnalysisService.analyzeProject(
-        project, coreProject
-    );
-    
-    // 保存评分
-    saveScore(result);
+public class CustomAIAdapter implements IAIService {
+    @Override
+    public AIResponse invoke(PreProcessedData data, AIConfig config) throws Exception {
+        // Your AI integration logic
+    }
+    @Override
+    public String getProviderName() {
+        return "custom-ai";
+    }
 }
-
-// 生成排行榜
-Leaderboard leaderboard = leaderboardService.generateLeaderboard(projects);
 ```
-
-**输出**：
-- 多维度评分（创新性、实用性、代码质量）
-- 排行榜
-- 详细评审报告
-- 优胜项目推荐
-
-### 3. CI/CD 集成
-
-**场景**：在 CI/CD 流程中自动进行代码审查。
-
-```yaml
-# .github/workflows/code-review.yml
-name: AI Code Review
-
-on: [pull_request]
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: AI Review
-        run: |
-          java -jar ai-reviewer.jar analyze \
-            --project . \
-            --output report.md \
-            --fail-threshold 60
-      - name: Comment PR
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('report.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-```
-
-### 4. 技术债务管理
-
-**场景**：识别和跟踪技术债务。
-
+### Adding a Custom Processor
 ```java
-// 分析技术债务
-ReviewReport report = analysisService.analyzeProject(project).getReport();
-int techDebt = report.getDimensionScore("technical_debt");
-
-// 识别高风险区域
-List<Issue> criticalIssues = report.getIssues().stream()
-    .filter(i -> i.getSeverity() == Severity.CRITICAL)
-    .collect(Collectors.toList());
-
-// 生成债务报告
-String debtReport = reportService.generateTechnicalDebtReport(report);
+public class CustomProcessor implements IResultProcessor {
+    @Override
+    public ProcessResult process(List<AIResponse> responses, ProcessorConfig config) throws Exception {
+        // Your processing logic
+    }
+    @Override
+    public String getProcessorType() {
+        return "custom-processor";
+    }
+}
 ```
-
----
-
-## 🌟 核心优势
-
-### 1. 架构优势
-
-- ✅ **高度解耦**：领域逻辑与技术实现完全分离
-- ✅ **易于测试**：通过端口接口进行单元测试，无需真实外部依赖
-- ✅ **技术无关**：可轻松切换 AI 提供商、数据库、缓存等
-- ✅ **可扩展性**：通过添加适配器支持新功能
-- ✅ **可维护性**：清晰的代码结构，职责明确
-
-### 2. 功能优势
-
-- ✅ **多 AI 支持**：支持主流 AI 服务，可自动选择最优模型
-- ✅ **智能缓存**：避免重复分析，节省时间和成本
-- ✅ **异步处理**：支持批量异步分析，提升效率
-- ✅ **多语言支持**：支持 10+ 主流编程语言
-- ✅ **详细报告**：提供多维度评分和改进建议
-
-### 3. 黑客松优势
-
-- ✅ **快速评分**：自动化评分，节省评审时间
-- ✅ **公平公正**：基于 AI 的客观评分
-- ✅ **多维度评估**：全面评估项目质量
-- ✅ **实时排行榜**：自动生成排行榜
-- ✅ **详细反馈**：为参赛者提供详细改进建议
-
----
-
-## 🛠️ 技术栈
-
-### 核心技术
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| **Java** | 17+ | 核心开发语言 |
-| **Maven** | 3.8+ | 项目构建工具 |
-| **Lombok** | 1.18.36 | 减少样板代码 |
-| **SLF4J** | 2.0.13 | 日志框架 |
-
-### AI 集成
-
-| 服务商 | 支持模型 | 状态 |
-|--------|---------|------|
-| **DeepSeek** | deepseek-chat | ✅ 完全支持 |
-| **OpenAI** | gpt-4, gpt-3.5-turbo | ✅ 完全支持 |
-| **Google Gemini** | gemini-pro | ✅ 完全支持 |
-| **Claude** | claude-3 | ✅ 完全支持 |
-
-### 外部依赖
-
-| 依赖 | 版本 | 用途 |
-|------|------|------|
-| **JGit** | 6.8.0 | Git 操作 |
-| **OkHttp** | 4.12.0 | HTTP 客户端 |
-| **Jackson** | 2.17.0 | JSON/YAML 处理 |
-| **FastJSON2** | 2.0.52 | JSON 处理 |
-| **SnakeYAML** | 2.2 | YAML 处理 |
-| **Apache PDFBox** | 3.0.2 | PDF 生成 |
-| **Apache POI** | 5.2.5 | Excel 生成 |
-| **Graphviz** | 0.18.1 | 图表生成 |
-| **ANTLR** | 4.13.1 | 代码解析 |
-| **Apache Tika** | 2.9.2 | 文件类型检测 |
-
-### 测试框架
-
-| 框架 | 版本 | 用途 |
-|------|------|------|
-| **JUnit** | 5.10.2 | 单元测试 |
-| **Mockito** | 5.10.0 | Mock 框架 |
-| **AssertJ** | 3.26.3 | 断言库 |
-
----
-
-## 📊 项目统计
-
-### 代码统计
-
-| 指标 | 数量 |
-|------|------|
-| **源代码文件** | 83 个 Java 文件 |
-| **测试文件** | 18 个测试类 |
-| **代码行数** | ~15,000 行 |
-| **文档字数** | 50,000+ 字 |
-
-### 架构质量
-
-| 指标 | 评分 |
-|------|------|
-| **六边形架构符合度** | 95% |
-| **依赖倒置实现** | 90% |
-| **模块独立性** | 85% |
-| **代码质量** | A+ |
-| **测试覆盖率** | ~70% |
-
----
-
-## 🤝 贡献
-
-我们欢迎各种形式的贡献！
-
-### 贡献方式
-
-1. **报告 Bug**：在 [Issues](https://github.com/jinhua10/ai-reviewer/issues) 中报告问题
-2. **提出功能建议**：在 [Discussions](https://github.com/jinhua10/ai-reviewer/discussions) 中讨论新功能
-3. **提交代码**：Fork 项目，创建 Pull Request
-4. **改进文档**：帮助完善文档和示例
-
-### 开发指南
-
-#### 1. Fork 项目
-
-```bash
-# Fork项目到你的账号
-# 克隆你的Fork
-git clone https://github.com/your-username/ai-reviewer.git
-cd ai-reviewer
+## 🔄 Processing Flow
 ```
-
-#### 2. 创建分支
-
-```bash
-git checkout -b feature/your-feature-name
+1. File Scanning → Discover files in target directory
+2. File Filtering → Apply include/exclude patterns
+3. File Parsing → Parse files using appropriate parsers
+4. AI Processing → Send to AI service for analysis
+5. Result Processing → Generate final output/reports
 ```
-
-#### 3. 开发和测试
-
+## 📊 Configuration Reference
+### Scanner Configuration
+| Property | Default | Description |
+|----------|---------|-------------|
+| `include-patterns` | `[]` | Glob patterns for files to include |
+| `exclude-patterns` | `[]` | Glob patterns for files to exclude |
+| `max-file-size` | `10MB` | Maximum file size to process |
+### AI Configuration
+| Property | Default | Description |
+|----------|---------|-------------|
+| `provider` | `openai` | AI service provider |
+| `model` | `gpt-4` | Model to use |
+| `api-key` | - | API key (required) |
+| `temperature` | `0.7` | Temperature for AI generation |
+| `max-tokens` | `2000` | Maximum tokens to generate |
+### Processor Configuration
+| Property | Default | Description |
+|----------|---------|-------------|
+| `type` | `code-review` | Processor type |
+| `output-format` | `markdown` | Output format |
+| `output-path` | `./reports` | Output directory |
+## 🧪 Testing
+Run tests:
 ```bash
-# 编译
-mvn clean compile
-
-# 运行测试
 mvn test
-
-# 代码格式化
-mvn spotless:apply
 ```
-
-#### 4. 提交代码
-
-```bash
-git add .
-git commit -m "feat: 添加新功能"
-git push origin feature/your-feature-name
-```
-
-#### 5. 创建 Pull Request
-
-在 GitHub 上创建 Pull Request，描述你的改动。
-
-### 代码规范
-
-- 遵循 **六边形架构** 原则
-- 遵循 **SOLID** 原则
-- 编写单元测试
-- 添加 JavaDoc 注释
-- 使用有意义的变量名
-- 保持代码简洁
-
-### Commit 规范
-
-使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
-
-```
-feat: 添加新功能
-fix: 修复Bug
-docs: 更新文档
-style: 代码格式化
-refactor: 代码重构
-test: 添加测试
-chore: 构建配置
-```
-
+## 📝 License
+[Apache License 2.0](./LICENSE.txt)
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+## 📧 Contact
+[Add your contact information]
+## 🎯 Roadmap
+- [ ] Add support for Python file parsing
+- [ ] Integrate Claude AI service
+- [ ] Add HTML report generation
+- [ ] Add REST API endpoints
+- [ ] Add WebSocket for real-time updates
+- [ ] Add distributed processing support
 ---
-
-## 📄 许可证
-
-本项目采用 **Apache License 2.0** 开源协议。
-
-详见 [LICENSE.txt](LICENSE.txt)
-
----
-
-## 📞 联系方式
-
-- **项目主页**：https://github.com/jinhua10/ai-reviewer
-- **问题反馈**：https://github.com/jinhua10/ai-reviewer/issues
-- **讨论区**：https://github.com/jinhua10/ai-reviewer/discussions
-- **Email**：support@yumbo.top
-
----
-
-## 🙏 致谢
-
-感谢以下项目和团队：
-
-- [OpenAI](https://openai.com/) - GPT 系列模型
-- [DeepSeek](https://deepseek.com/) - DeepSeek AI 模型
-- [Google](https://ai.google/) - Gemini 模型
-- [Anthropic](https://www.anthropic.com/) - Claude 模型
-- [Eclipse JGit](https://www.eclipse.org/jgit/) - Git 操作库
-- [OkHttp](https://square.github.io/okhttp/) - HTTP 客户端
-- 所有贡献者和用户
-
----
-
-## 🗺️ 路线图
-
-### 近期计划（v2.1）
-
-- [ ] 支持更多 AI 服务商（QWen、ChatGLM）
-- [ ] 增强可视化报告
-- [ ] 添加 Web UI
-- [ ] 支持 GitLab 集成
-- [ ] 性能优化
-
-### 中期计划（v2.5）
-
-- [ ] 支持增量分析
-- [ ] 添加规则引擎
-- [ ] 支持自定义评分规则
-- [ ] 团队协作功能
-- [ ] 历史趋势分析
-
-### 长期计划（v3.0）
-
-- [ ] 云服务版本
-- [ ] 企业版功能
-- [ ] IDE 插件
-- [ ] 实时代码审查
-- [ ] AI 训练优化
-
----
-
-## ⭐ Star History
-
-如果这个项目对你有帮助，请给我们一个 ⭐️！
-
-[![Star History Chart](https://api.star-history.com/svg?repos=jinhua10/ai-reviewer&type=Date)](https://star-history.com/#jinhua10/ai-reviewer&Date)
-
----
-
-<div align="center">
-
-**Made with ❤️ by AI-Reviewer Team**
-
-[⬆ 回到顶部](#ai-reviewer-)
-
-</div>
-
+Built with ❤️ using Spring Boot and modern Java practices.
