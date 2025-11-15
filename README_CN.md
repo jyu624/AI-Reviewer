@@ -126,7 +126,7 @@ AI Reviewer遵循清晰的分层架构，职责分离明确：
 
 ### 应用配置
 
-在项目中创建或更新 `application.yml`：
+在项目中创建或更新 `application.yml` ：
 
 ```yaml
 ai-reviewer:
