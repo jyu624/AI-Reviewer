@@ -25,10 +25,10 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class AIEngine {
-    private final AdapterRegistry registry;
-    private final FileScanner fileScanner;
-    private final FileFilter fileFilter;
-    private ExecutorService executorService;
+    protected final AdapterRegistry registry;
+    protected final FileScanner fileScanner;
+    protected final FileFilter fileFilter;
+    protected ExecutorService executorService;
 
     public AIEngine(AdapterRegistry registry) {
         this.registry = registry;
@@ -139,7 +139,7 @@ public class AIEngine {
     /**
      * Parse files using registered parsers
      */
-    private List<PreProcessedData> parseFiles(List<Path> files) throws InterruptedException, ExecutionException {
+    public List<PreProcessedData> parseFiles(List<Path> files) throws InterruptedException, ExecutionException {
         log.info("Parsing {} files", files.size());
         List<Future<PreProcessedData>> futures = new ArrayList<>();
         for (Path file : files) {
@@ -170,7 +170,7 @@ public class AIEngine {
     /**
      * Invoke AI service
      */
-    private List<AIResponse> invokeAI(List<PreProcessedData> dataList, ExecutionContext context)
+    public List<AIResponse> invokeAI(List<PreProcessedData> dataList, ExecutionContext context)
             throws InterruptedException, ExecutionException {
         log.info("Invoking AI service for {} items", dataList.size());
         IAIService aiService = registry.getAIService(context.getAiConfig().getProvider())
@@ -203,7 +203,7 @@ public class AIEngine {
     /**
      * Process results
      */
-    private ProcessResult processResults(List<AIResponse> responses, ExecutionContext context) throws Exception {
+    public ProcessResult processResults(List<AIResponse> responses, ExecutionContext context) throws Exception {
         log.info("Processing {} AI responses", responses.size());
 
         IResultProcessor processor = registry.getProcessor(context.getProcessorConfig().getProcessorType())
