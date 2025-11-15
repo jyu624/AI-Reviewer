@@ -3,6 +3,7 @@ package top.yumbo.ai.application.hackathon.ai;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
@@ -230,6 +231,9 @@ public class BedrockAdapter implements IAIService {
     @Override
     public AIResponse invoke(PreProcessedData data, AIConfig config) throws Exception {
         try {
+            if(StringUtils.isEmpty(data.getContent())){
+                return AIResponse.builder().build();
+            }
             // 构建请求体（根据不同模型格式会有所不同）
             String requestBody = buildRequestBody(String.format(config.getUserPrompt(), data.getContent()));
 
