@@ -31,7 +31,6 @@ public class BedrockAdapter implements IAIService {
     private AIConfig config;
     private String modelId;
     private Integer maxTokens;
-    private String region;
     private double temperature;
 
     /**
@@ -41,14 +40,13 @@ public class BedrockAdapter implements IAIService {
      */
     public BedrockAdapter(AIConfig config) {
         this.config = config;
-        this.modelId = config.getModel();
         this.maxTokens = config.getMaxTokens();
         this.temperature = config.getTemperature();
-        this.region = "us-east-1";
         // 初始化 Bedrock 客户端
         var clientBuilder = BedrockRuntimeClient.builder()
-                .region(Region.of(this.region));
+                .region(Region.of(config.getRegion()));
 
+        this.modelId = extractModelId(config.getModel());
 
         // 配置超时时间（解决 Read timeout 问题）
         clientBuilder.overrideConfiguration(builder -> builder
@@ -233,7 +231,7 @@ public class BedrockAdapter implements IAIService {
             // 构建请求体（根据不同模型格式会有所不同）
             String requestBody = buildRequestBody(data.getContent());
 
-            log.debug("调用 Bedrock 模型 - Model ID: {}, Region: {}", modelId, region);
+            log.debug("调用 Bedrock 模型 - Model ID: {}, Region: {}", modelId, config.getRegion());
             log.debug("请求体: {}", requestBody);
 
             // 调用模型
