@@ -9,6 +9,7 @@ import top.yumbo.ai.application.hackathon.core.HackathonAIEngine;
 import top.yumbo.ai.application.hackathon.parser.HackathonFileParser;
 import top.yumbo.ai.core.registry.AdapterRegistry;
 import top.yumbo.ai.starter.config.AIReviewerProperties;
+import jakarta.annotation.PostConstruct;
 
 /**
  * Auto-configuration for Hackathon
@@ -21,14 +22,13 @@ public class HackathonAutoConfiguration {
     @Autowired
     AdapterRegistry registry;
 
-    @Bean
-    public AdapterRegistry adapterRegistry() {
-        log.info("Initializing AdapterRegistry");
+    @PostConstruct
+    public void customizeAdapterRegistry() {
+        log.info("Customizing AdapterRegistry for Hackathon");
         // remove default parser for hackathon
-        registry.getAllParsers().clear();
+        registry.clearParsers();
         registry.registerParser(new HackathonFileParser());
         registry.loadAdaptersFromSPI();
-        return registry;
     }
 
     @Bean

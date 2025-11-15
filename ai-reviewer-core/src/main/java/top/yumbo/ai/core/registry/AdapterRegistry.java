@@ -74,6 +74,13 @@ public class AdapterRegistry {
         return Collections.unmodifiableCollection(processors.values());
     }
     /**
+     * Clear registered parsers
+     */
+    public void clearParsers() {
+        parsers.clear();
+        log.info("Cleared all registered parsers");
+    }
+    /**
      * Load adapters using SPI
      */
     public void loadAdaptersFromSPI() {
