@@ -43,17 +43,35 @@ public class HackathonAutoConfiguration {
     @PostConstruct
     public void customizeAdapterRegistry() {
         log.info("Customizing AdapterRegistry for Hackathon");
+
+        // 确保 userPrompt 不为空,提供默认值
+        String userPrompt = properties.getAi().getUserPrompt();
+        if (userPrompt == null || userPrompt.trim().isEmpty()) {
+            log.warn("userPrompt 未配置,使用默认提示词");
+            userPrompt = "Please review the following code:\n\n%s\n\nProvide your analysis.";
+        }
+
+        String sysPrompt = properties.getAi().getSysPrompt();
+        if (sysPrompt == null || sysPrompt.trim().isEmpty()) {
+            log.warn("sysPrompt 未配置,使用默认系统提示词");
+            sysPrompt = "You are an expert code reviewer.";
+        }
+
         // Build execution context
-        this.aiConfig = AIConfig.builder().provider(properties.getAi().getProvider())
+        this.aiConfig = AIConfig.builder()
+                .provider(properties.getAi().getProvider())
                 .region(properties.getAi().getRegion())
-                .model(properties.getAi().getModel()).apiKey(properties.getAi().getApiKey())
-                .sysPrompt(properties.getAi().getSysPrompt())
-                .userPrompt(properties.getAi().getUserPrompt())
+                .model(properties.getAi().getModel())
+                .apiKey(properties.getAi().getApiKey())
+                .sysPrompt(sysPrompt)
+                .userPrompt(userPrompt)
                 .endpoint(properties.getAi().getEndpoint())
                 .temperature(properties.getAi().getTemperature())
                 .maxTokens(properties.getAi().getMaxTokens())
                 .timeoutSeconds(properties.getAi().getTimeoutSeconds())
-                .maxRetries(properties.getAi().getMaxRetries()).build();
+                .maxRetries(properties.getAi().getMaxRetries())
+                .build();
+
         // remove default parser for hackathon
         registry.clearParsers();
         registry.clearAIServices();
@@ -61,6 +79,7 @@ public class HackathonAutoConfiguration {
         registry.registerAIService(new BedrockAdapter(aiConfig));
         registry.loadAdaptersFromSPI();
     }
+
 
 
     @Bean
