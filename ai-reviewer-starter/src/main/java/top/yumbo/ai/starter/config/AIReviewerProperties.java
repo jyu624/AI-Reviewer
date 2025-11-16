@@ -1,6 +1,8 @@
 package top.yumbo.ai.starter.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import top.yumbo.ai.api.model.AIConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -11,7 +13,7 @@ import java.util.List;
 public class AIReviewerProperties {
     private Scanner scanner = new Scanner();
     private Parser parser = new Parser();
-    private AI ai = new AI();
+    private AIConfig ai;
     private Processor processor = new Processor();
     private Executor executor = new Executor();
     @Data
@@ -24,20 +26,7 @@ public class AIReviewerProperties {
     public static class Parser {
         private List<String> enabledParsers = List.of("java", "text");
     }
-    @Data
-    public static class AI {
-        private String provider = "bedrock";
-        private String model = "arn:aws:bedrock:us-east-1:590184013141:inference-profile/us.anthropic.claude-sonnet-4-5-20250929-v1:0";
-        private String region="us-east-1";
-        private String apiKey;
-        private String endpoint;
-        private String sysPrompt;
-        private String userPrompt;
-        private Double temperature = 0.7;
-        private Integer maxTokens = 2000;
-        private Integer timeoutSeconds = 120;
-        private Integer maxRetries = 3;
-    }
+
     @Data
     public static class Processor {
         private String type = "code-review";
