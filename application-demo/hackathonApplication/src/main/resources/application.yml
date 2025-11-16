@@ -38,8 +38,15 @@ ai-reviewer:
       5. Code Standards (15 Points) - Code style, comments, and maintainability
 
       Project source code: %s
-
+      
+      Please ensure your output conforms to the following format.
       【Total Score】: X/100 points
+      
+      【Project Features】: 
+      - Code Row Count X rows
+      - Designed Pattern: X
+      - Project Architecture: X
+      - Workflow: X
 
       【Scores for Each Category】
       - Innovation: X/25 points
