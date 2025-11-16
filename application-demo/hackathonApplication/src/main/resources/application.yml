@@ -44,7 +44,7 @@ ai-reviewer:
       3. Improvement suggestions
     temperature: 0.7
     max-tokens: 2000
-    timeout-seconds: 30
+    timeout-seconds: 120
     max-retries: 3
   # Processor configuration
   processor:
