@@ -25,9 +25,46 @@ ai-reviewer:
 #    model: deepseek-coder
 #    api-key: ${AI_API_KEY:your-api-key-here}
 #    endpoint: https://api.deepseek.com/v1/chat/completions
-    sys-prompt: "You are a senior software engineer specializing in code review. Analyze the code for: Code quality and maintainability, Potential bugs and security issues, Performance optimization opportunities, Best practices compliance"
+    sys-prompt: "You are an experienced hackathon review expert."
     #use String.format(userPrompt,code/content) to insert code snippet
-    user-prompt: "Please review the following code:\n\n%s\n\nProvide detailed feedback on: 1. Code structure and design, 2. Potential issues, 3. Improvement suggestions"
+    user-prompt: |-
+      Reply in English, Please conduct a comprehensive assessment based on the following project source code and provide a score and detailed comments.
+
+      Scoring Criteria (Total 100 Points):
+      1. Innovation (25 Points) - Uniqueness and creativity of ideas
+      2. Technical Implementation (25 Points) - Code quality, architecture design, and technology selection
+      3. Completeness (20 Points) - Functionality completeness and code completeness
+      4. Practicality (15 Points) - Practical application value of the project
+      5. Code Standards (15 Points) - Code style, comments, and maintainability
+
+      Project source code: %s
+
+      【Total Score】: X/100 points
+
+      【Scores for Each Category】
+      - Innovation: X/25 points
+      - Technical Implementation: X/25 points
+      - Completeness: X/20 points
+      - Practicality: X/15 points
+      - Code Standards: X/15 points
+
+      【Advantages】
+      1. ...
+      2. ...
+      3. ...
+
+      【Weaknesses】
+      1. ...
+      2. ...
+      3. ...
+
+      【Suggestions for Improvement】
+      1. ...
+      2. ...
+      3. ...
+
+      【Overall Comment】
+      (Summary evaluation within 200 words)
     temperature: 0.7
     max-tokens: 20000
     timeout-seconds: 600
