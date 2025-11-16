@@ -53,8 +53,8 @@ public class BedrockAdapter implements IAIService {
 
         // 配置超时时间（解决 Read timeout 问题）
         clientBuilder.overrideConfiguration(builder -> builder
-                .apiCallTimeout(java.time.Duration.ofMillis(config.getTimeoutSeconds()))
-                .apiCallAttemptTimeout(java.time.Duration.ofMillis(config.getTimeoutSeconds()))
+                .apiCallTimeout(java.time.Duration.ofSeconds(config.getTimeoutSeconds()))
+                .apiCallAttemptTimeout(java.time.Duration.ofSeconds(config.getTimeoutSeconds()))
                 .retryPolicy(retry -> retry
                         .numRetries(config.getMaxRetries())
                 )
