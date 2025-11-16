@@ -37,7 +37,7 @@ public class HackathonAutoConfiguration {
     @Autowired
     AdapterRegistry registry;
     @Autowired
-    AIReviewerProperties properties;
+    AIReviewerProperties aiReviewerProperties;
 
     private AIConfig aiConfig;
 
@@ -46,7 +46,7 @@ public class HackathonAutoConfiguration {
         log.info("Customizing AdapterRegistry for Hackathon");
 
         // 直接使用配置文件中的 AIConfig
-        this.aiConfig = properties.getAi();
+        this.aiConfig = aiReviewerProperties.getAi();
 
         // Debug: 打印配置信息
         log.info("========== 配置加载调试信息 ==========");
@@ -85,7 +85,7 @@ public class HackathonAutoConfiguration {
     public CommandLineRunner runner(HackathonAIEngine hackathonAIEngine) {
         return args -> {
             log.info("AI Reviewer Started - Hackathon AIEngine bean found: {}", hackathonAIEngine != null);
-            log.info("Configuration: {}", properties);
+            log.info("Configuration: {}", aiReviewerProperties);
 
             // Merge JVM property -Dspring-boot.run.arguments if provided (used by some wrappers)
             List<String> mergedArgs = new ArrayList<>();
@@ -141,7 +141,7 @@ public class HackathonAutoConfiguration {
                 }
 
                 if (targetPath != null) {
-                    runReview(hackathonAIEngine, properties, targetPath);
+                    runReview(hackathonAIEngine, aiReviewerProperties, targetPath);
                 } else {
                     log.info("No --review argument provided; application started without running a review.");
                 }

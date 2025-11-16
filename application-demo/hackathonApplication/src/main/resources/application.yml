@@ -30,7 +30,7 @@ ai-reviewer:
     user-prompt: "Please review the following code:\n\n%s\n\nProvide detailed feedback on: 1. Code structure and design, 2. Potential issues, 3. Improvement suggestions"
     temperature: 0.7
     max-tokens: 20000
-    timeout-seconds: 120
+    timeout-seconds: 600
     max-retries: 3
   # Processor configuration
   processor:
