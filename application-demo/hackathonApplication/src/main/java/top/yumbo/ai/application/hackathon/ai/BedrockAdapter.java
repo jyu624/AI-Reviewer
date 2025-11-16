@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
@@ -45,12 +46,20 @@ public class BedrockAdapter implements IAIService {
         this.config = config;
         this.maxTokens = config.getMaxTokens();
         this.temperature = config.getTemperature();
+
+        this.modelId = extractModelId(config.getModel());
+
+        // 配置 HTTP 客户端，设置 socket 超时
+        ApacheHttpClient.Builder httpClientBuilder =
+                ApacheHttpClient.builder()
+                        .socketTimeout(java.time.Duration.ofSeconds(config.getTimeoutSeconds()))
+                        .connectionTimeout(java.time.Duration.ofSeconds(30));
+
         // 初始化 Bedrock 客户端
         var clientBuilder = BedrockRuntimeClient.builder()
                 .region(Region.of(config.getRegion()))
-                .credentialsProvider(DefaultCredentialsProvider.create());
-
-        this.modelId = extractModelId(config.getModel());
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .httpClient(httpClientBuilder.build());
 
         // 配置超时时间（解决 Read timeout 问题）
         clientBuilder.overrideConfiguration(builder -> builder
