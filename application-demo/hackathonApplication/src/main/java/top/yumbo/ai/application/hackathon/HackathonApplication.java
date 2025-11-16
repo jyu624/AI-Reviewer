@@ -15,7 +15,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class HackathonApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(HackathonApplication.class, args);
+        // 启用配置文件调试
+        System.setProperty("logging.level.org.springframework.boot.context.config", "DEBUG");
+        System.setProperty("logging.level.org.springframework.core.env", "DEBUG");
+
+        log.info("Starting application with args: {}", String.join(", ", args));
+        log.info("Classpath: {}", System.getProperty("java.class.path"));
+
+        SpringApplication app = new SpringApplication(HackathonApplication.class);
+        // 确保加载 application.yml
+        app.setAdditionalProfiles(); // 使用默认 profile
+        app.run(args);
     }
 
 

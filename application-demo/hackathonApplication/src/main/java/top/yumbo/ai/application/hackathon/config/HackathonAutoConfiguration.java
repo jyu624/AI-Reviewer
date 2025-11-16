@@ -53,6 +53,18 @@ public class HackathonAutoConfiguration {
         log.info("MaxTokens: {}", properties.getAi().getMaxTokens());
         log.info("TimeoutSeconds: {}", properties.getAi().getTimeoutSeconds());
         log.info("MaxRetries: {}", properties.getAi().getMaxRetries());
+        log.info("SysPrompt is null: {}", properties.getAi().getSysPrompt() == null);
+        log.info("SysPrompt length: {}", properties.getAi().getSysPrompt() != null ? properties.getAi().getSysPrompt().length() : 0);
+        log.info("SysPrompt (first 50 chars): '{}'",
+                properties.getAi().getSysPrompt() != null && properties.getAi().getSysPrompt().length() > 0
+                        ? properties.getAi().getSysPrompt().substring(0, Math.min(50, properties.getAi().getSysPrompt().length()))
+                        : "NULL or EMPTY");
+        log.info("UserPrompt is null: {}", properties.getAi().getUserPrompt() == null);
+        log.info("UserPrompt length: {}", properties.getAi().getUserPrompt() != null ? properties.getAi().getUserPrompt().length() : 0);
+        log.info("UserPrompt (first 50 chars): '{}'",
+                properties.getAi().getUserPrompt() != null && properties.getAi().getUserPrompt().length() > 0
+                        ? properties.getAi().getUserPrompt().substring(0, Math.min(50, properties.getAi().getUserPrompt().length()))
+                        : "NULL or EMPTY");
         log.info("=====================================");
 
         // 确保 userPrompt 不为空,提供默认值
