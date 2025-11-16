@@ -1,7 +1,6 @@
 package top.yumbo.ai.adaptor.source;
 
 import com.jcraft.jsch.*;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import top.yumbo.ai.api.source.FileSourceConfig;
 import top.yumbo.ai.api.source.IFileSource;
@@ -25,13 +24,19 @@ import java.util.Vector;
  * @since 1.1.0
  */
 @Slf4j
-@Data
 public class SftpFileSource implements IFileSource {
 
     private Session session;
     private ChannelSftp sftpChannel;
     private String basePath;
     private boolean initialized = false;
+
+    /**
+     * Public no-arg constructor required for instantiation
+     */
+    public SftpFileSource() {
+        // Default constructor
+    }
 
     @Override
     public String getSourceName() {
