@@ -57,12 +57,6 @@ public class HackathonCodeReviewProcessor implements IResultProcessor {
             report.append("## Summary\n\n");
             report.append("- Total files reviewed: ").append(responses.size()).append("\n");
 
-            long totalTokens = responses.stream()
-                    .filter(r -> r.getTokenUsage() != null)
-                    .mapToLong(r -> r.getTokenUsage().getTotalTokens())
-                    .sum();
-            report.append("- Total tokens used: ").append(totalTokens).append("\n");
-
             long aiProcessingTime = responses.stream()
                     .filter(r -> r.getProcessingTimeMs() != null)
                     .mapToLong(AIResponse::getProcessingTimeMs)
@@ -98,7 +92,6 @@ public class HackathonCodeReviewProcessor implements IResultProcessor {
             // Build metadata
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("filesReviewed", responses.size());
-            metadata.put("totalTokens", totalTokens);
             metadata.put("aiProcessingTime", aiProcessingTime);
 
             // Copy timing information from config if available
