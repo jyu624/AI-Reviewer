@@ -19,6 +19,7 @@
         <module>ai-reviewer-adaptor-parser</module>
         <module>ai-reviewer-adaptor-ai</module>
         <module>ai-reviewer-adaptor-processor</module>
+        <module>ai-reviewer-adaptor-source</module>
         <module>ai-reviewer-starter</module>
         <module>application-demo/hackathonApplication</module>
     </modules>
@@ -80,6 +81,11 @@
             <dependency>
                 <groupId>top.yumbo.ai</groupId>
                 <artifactId>ai-reviewer-adaptor-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>top.yumbo.ai</groupId>
+                <artifactId>ai-reviewer-adaptor-source</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

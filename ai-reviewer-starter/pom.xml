@@ -39,6 +39,10 @@
             <artifactId>ai-reviewer-adaptor-processor</artifactId>
         </dependency>
         <dependency>
+            <groupId>top.yumbo.ai</groupId>
+            <artifactId>ai-reviewer-adaptor-source</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>

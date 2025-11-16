@@ -3,6 +3,7 @@ import lombok.Builder;
 import lombok.Data;
 import top.yumbo.ai.api.model.AIConfig;
 import top.yumbo.ai.api.model.ProcessorConfig;
+import top.yumbo.ai.api.source.FileSourceConfig;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,8 +41,15 @@ public class ExecutionContext {
      */
     private Long resultProcessingTimeMs;
     /**
-     * Target directory to process
+     * File source configuration (new approach)
+     * @since 1.1.0
      */
+    private FileSourceConfig fileSourceConfig;
+    /**
+     * Target directory to process (deprecated, use fileSourceConfig instead)
+     * @deprecated Use {@link #fileSourceConfig} instead for more flexible file source support
+     */
+    @Deprecated
     private Path targetDirectory;
     /**
      * Include patterns

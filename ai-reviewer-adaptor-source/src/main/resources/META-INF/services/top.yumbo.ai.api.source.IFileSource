@@ -1,0 +1,5 @@
+top.yumbo.ai.adaptor.source.LocalFileSource
+top.yumbo.ai.adaptor.source.SftpFileSource
+top.yumbo.ai.adaptor.source.GitFileSource
+top.yumbo.ai.adaptor.source.S3FileSource
+
