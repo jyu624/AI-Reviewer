@@ -34,52 +34,38 @@ public class HackathonCodeReviewProcessor implements IResultProcessor {
             StringBuilder report = new StringBuilder();
             report.append("# Code Review Report\n\n");
             report.append("**Generated at:** ").append(LocalDateTime.now().format(DATE_FORMATTER)).append("\n\n");
-            report.append("**Total Files Reviewed:** ").append(responses.size()).append("\n\n");
             report.append("---\n\n");
 
-            // Process each response
-            int fileIndex = 1;
             for (AIResponse response : responses) {
-                report.append("## File ").append(fileIndex++).append("\n\n");
                 report.append("**Model:** ").append(response.getModel()).append("\n");
                 report.append("**Provider:** ").append(response.getProvider()).append("\n");
+                // Add timing breakdown from config metadata if available
+                if (config.getCustomParams() != null) {
+                    Long parseTime = getValue((Long) config.getCustomParams().get("parsingTimeMs"));
+                    Long aiTime = getValue((Long) config.getCustomParams().get("aiInvocationTimeMs"));
+                    Long processTime = getValue((Long) config.getCustomParams().get("resultProcessingTimeMs"));
+                    Long scanTime = getValue((Long) config.getCustomParams().get("scanTimeMs"));
+                    Long filterTime = getValue((Long) config.getCustomParams().get("filterTimeMs"));
 
-                if (response.getProcessingTimeMs() != null) {
-                    report.append("**Processing Time:** ").append(response.getProcessingTimeMs()).append(" ms\n");
+                    report.append("\n### Execution Time Breakdown\n\n");
+                    report.append("- **File scanning:** ").append(getValue(scanTime)).append(" ms\n");
+                    report.append("- **File filtering:** ").append(filterTime).append(" ms\n");
+                    report.append("- **File parsing:** ").append(parseTime).append(" ms\n");
+                    report.append("- **Result processing:** ").append(processTime).append(" ms\n");
+                    report.append("- **AI invocation:** ").append(aiTime).append(" ms\n");
+                    report.append("- **total time:** ").append((scanTime + filterTime + parseTime + aiTime + processTime)).append(" ms\n");
+
                 }
-
-                report.append("\n### Review Comments\n\n");
+                report.append("\n### Review Result\n\n");
                 report.append(response.getContent()).append("\n\n");
                 report.append("---\n\n");
             }
-
-            // Add summary
-            report.append("## Summary\n\n");
-            report.append("- Total files reviewed: ").append(responses.size()).append("\n");
 
             long aiProcessingTime = responses.stream()
                     .filter(r -> r.getProcessingTimeMs() != null)
                     .mapToLong(AIResponse::getProcessingTimeMs)
                     .sum();
-            report.append("- AI processing time: ").append(aiProcessingTime).append(" ms\n");
 
-            // Add timing breakdown from config metadata if available
-            if (config.getCustomParams() != null) {
-                Long parseTime = getValue((Long) config.getCustomParams().get("parsingTimeMs"));
-                Long aiTime = getValue((Long) config.getCustomParams().get("aiInvocationTimeMs"));
-                Long processTime = getValue((Long) config.getCustomParams().get("resultProcessingTimeMs"));
-                Long scanTime = getValue((Long) config.getCustomParams().get("scanTimeMs"));
-                Long filterTime = getValue((Long) config.getCustomParams().get("filterTimeMs"));
-
-                report.append("\n### Execution Time Breakdown\n\n");
-                report.append("- **File scanning:** ").append(getValue(scanTime)).append(" ms\n");
-                report.append("- **File filtering:** ").append(filterTime).append(" ms\n");
-                report.append("- **File parsing:** ").append(parseTime).append(" ms\n");
-                report.append("- **Result processing:** ").append(processTime).append(" ms\n");
-                report.append("- **AI invocation:** ").append(aiTime).append(" ms\n");
-                report.append("- **total time:** ").append((scanTime + filterTime + parseTime + aiTime + processTime)).append(" ms\n");
-
-            }
 
             String content = report.toString();
 
