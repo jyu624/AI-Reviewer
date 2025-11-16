@@ -41,11 +41,17 @@ public class AIResponse {
      * Additional metadata
      */
     private Map<String, Object> metadata;
+    private String stopReason;
+
     @Data
     @Builder
     public static class TokenUsage {
         private Integer promptTokens;
         private Integer completionTokens;
         private Integer totalTokens;
+        private Integer inputTokens;
+        private Integer outputTokens;
+        private Integer cacheCreationInputTokens;
+        private Integer cacheRInputTokens;
     }
 }

@@ -1,6 +1,7 @@
 package top.yumbo.ai.application.hackathon.ai;
 
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -260,16 +261,22 @@ public class BedrockAdapter implements IAIService {
             JSONObject responseBody = JSONObject.parseObject(response.body().asUtf8String());
             log.debug("响应体: {}", responseBody);
             // Parse response
-            String content = responseBody.getJSONArray("choices").getJSONObject(0)
-                    .getJSONObject("message").getString("content");
+            JSONArray contentArray = responseBody.getJSONArray("content");
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < contentArray.size(); i++) {
+                JSONObject contentObj = contentArray.getJSONObject(i);
+                String type = contentObj.getString("type");
+                String content = contentObj.getString(type);
+                sb.append(content).append("\n");
+            }
+
             JSONObject usage = responseBody.getJSONObject("usage");
             AIResponse.TokenUsage tokenUsage = AIResponse.TokenUsage.builder()
-                    .promptTokens(usage.getInteger("prompt_tokens"))
-                    .completionTokens(usage.getInteger("completion_tokens"))
-                    .totalTokens(usage.getInteger("total_tokens"))
+                    .inputTokens(usage.getInteger("input_tokens"))
+                    .outputTokens(usage.getInteger("output_tokens"))
                     .build();
             return AIResponse.builder()
-                    .content(content)
+                    .content(sb.toString())
                     .model(config.getModel())
                     .provider(getProviderName())
                     .processingTimeMs(0L)
